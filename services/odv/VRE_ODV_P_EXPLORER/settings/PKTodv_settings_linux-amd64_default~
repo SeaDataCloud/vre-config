@@ -1,0 +1,75 @@
+[DIVA]
+BathymetryFileName =
+EnforceNonnegativity = 0
+MaxDivaThreadCount = 4
+PoormanErrorFactor = 12.5
+ScaleLengthFactor = 0.75
+SignalToNoiseRatio = 50
+UseSectionBathymetryPolygon = 1
+
+[Font]
+fontItalic = 0
+fontName = FreeSans
+fontScaleFactor = 1.2
+fontStrikeOut = 0
+fontUnderline = 0
+fontWeight = 3
+nativePSFontName = Arial-Bold
+txtFontPtSize = 12
+
+[Geometry]
+Canvas-Height = 1200
+Canvas-Width = 1700
+StatDock-Width = 424
+Window-Height = 627
+Window-Left = 246
+Window-Top = 33
+Window-Width = 1213
+showMaximized = 0
+
+[Highlighting]
+
+[Import]
+StationBreakPositionTolerance = 0.1
+StationBreakTimeTolerance = 1
+WODShortCruiseLabels = 1
+
+[Program Commands]
+BrowserCommand = firefox
+ViewerCommand = gedit
+
+[Recent]
+
+[Recent DlgShows]
+MsgNoValidStation = 2017-06-26T15:41:43
+
+[Recent Files]
+File0 = /var/www/html/ODV_Data/GEOTRACES_IDP2014_v2_CTD/GEOTRACES_IDP2014_v2_CTD_Sensor_Data.odv
+File1 = /var/www/html/ODV_Data/GEOTRACES_IDP2014_v3/Discrete_Sample_Data/odv/GEOTRACES_IDP2014_v3_Discrete_Sample_Data.odv
+File2 = /var/www/html/ODV_Data/GEOTRACES_IDP2014_v2/Discrete_Sample_Data/odv/GEOTRACES_IDP2014_v2_Discrete_Sample_Data.odv
+File3 = /home/smieruch/Downloads/Geotraces_test/GEOTRACES_IDP2014_v3_Discrete_Sample_Data38a79efa_4.odv
+File4 = /home/smieruch/Downloads/GEOTRACES_IDP2014_v3_Discrete_Sample_Data38a79efa_5.odv
+
+[Setup]
+ExtraSidebarURL1 = 
+ExtraSidebarURL2 = 
+InstallCopyVersion = 5.1.0
+ODVHOME = /var/www/html/odv_software/
+ODVHOST = bgeo04l002
+ODVUSER = woody
+ODVUserDir = /home/woody/Documents/ODV/
+
+[Utility Files]
+Etopo2File = /home/woody/Documents/ODV/bathymetry/ETOPO1_6x6min_Global.nc
+Gebco1File = /home/woody/Documents/ODV/bathymetry/GEBCO_2014_6x6min_Global.nc
+
+[Website]
+FileRootURL = http://odv.awi.de/fileadmin/user_upload/odv/
+URL = https://odv.awi.de
+VocabRootURL = http://vocab.nerc.ac.uk/collection/
+
+
+[Websockets]
+CertificateCrtFile = /etc/ssl_smieruch.crt/webodv.awi.de.crt
+CertificateKeyFile = /etc/ssl_smieruch.key/webodv.awi.de.key
+SecureMode = 0

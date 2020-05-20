@@ -1,0 +1,6 @@
+<div class="hummingbird-treeview-converter" data-height="100%" data-scroll="false">
+    <li id="dataset_0" data-id="0">Example Dataset for QC</li>
+    <li id="folder_0" data-id="folder_0">GEOTRACES IDP2017 v2</li>
+    <li id="dataset_1" data-id="1">-GEOTRACES IDP2017 - Discrete Sample Data</li>
+    <li id="dataset_2" data-id="2">-GEOTRACES IDP2017 - Aerosol and Rain Data</li>
+</div>

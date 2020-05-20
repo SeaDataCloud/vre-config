@@ -1,0 +1,18 @@
+{
+    "datasetname" : "default", 
+    "header"   : "default",
+    "path"     : "default",
+    "permission": "ReadWrite",
+    "text"     : "default",
+    "vre_url"     : "default",
+    "dataset_link"     : "default",
+    "dataset"     : "default",
+    "vre_brand"     : "default",
+    "services" : [
+	"Data Exploration"
+    ],
+    "services_texts": [
+	"ODV-online provides analysis and visualization services for a wide range of environmental data over the Internet. Browser window user interface and functionality mimick interface and functionality of the popular Ocean Data View software (ODV, <a href=\"https://odv.awi.de\" target=\"_blank\">https://odv.awi.de</a>). This allows previous ODV users to use ODV-online productively without any learning requirement.<br><br>For further information see the ODV-online help document or the ODV documentation."
+    ]
+}
+

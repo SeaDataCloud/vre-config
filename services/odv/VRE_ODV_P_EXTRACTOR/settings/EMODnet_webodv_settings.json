@@ -1,0 +1,25 @@
+{
+    "client_url": "localhost",
+    "http_port": ":11112",
+    "odv_settings": "PKTodv_settings_linux-amd64_default",
+    "wsodv_secret": "uV4r!u9k",
+    "proxy_settings": "wsODV_ProxyPass.txt",
+    "user": "woody",
+    "homedir": "/home/woody",
+    "odv_exe_path": "/var/www/html/bin/bin_linux-amd64",
+    "default_dataset_json": "EMODnet.json",
+    "treeview_search": true,
+    "ssl": false,
+    "ssl_client": true,
+    "virtual_screen": true,
+    "workspace": true,
+    "upload": false,
+    "awi_mount": false,
+    "vre": false,
+    "EMODnet": true,
+    "project": "EMODnet_chem",
+    "EMODnet_chem_settings": {
+	"marine_id_login": "https://users.marine-id.org/login?service=http://localhost:11112/webodv/login/marine_id",
+	"marine_id_validate": "https://users.marine-id.org/serviceValidate?ticket=XXX&service=http://localhost:11112/webodv/login/marine_id"
+    }
+}
