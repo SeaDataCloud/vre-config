@@ -1,7 +1,10 @@
-{
-    "<remoteserver>": {
-        "user": "<myusername>",
-        "dir": "/path/to/sync_target/",
-        "domain": "foo.bar.fr"
+[
+    {
+        "servername": "bluewhale",
+        "site": "hamburg",
+        "user": "vre",
+        "dir": "/storage/vre/sync_from_athens/nextcloud_data",
+        "url": "bluewhale.dkrz.de"
     }
-}
+]
+
