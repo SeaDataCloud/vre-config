@@ -2,9 +2,9 @@ version: '3.3'
 
 services:
 
-  #############
-  ### mysql ###
-  #############
+  ###########################
+  ### mysql for dashboard ###
+  ###########################
   db:
    image: mysql/mysql-server:8.0.0
    restart: always
@@ -19,6 +19,9 @@ services:
    networks:
     - vre_dash
 
+  ################################
+  ### SQL dump tool for backup ###
+  ################################
   dumper:
    image: registry-sdc.argo.grnet.gr/mysql-cron:20191024
    restart: always
@@ -41,9 +44,10 @@ services:
      interval: 300s
 
 
-  #################
-  ### VRE entry ###
-  #################
+  ########################
+  ### VRE entrypoint:  ###
+  ### dashboard        ###
+  ########################
   dashboard:
    image: registry-sdc.argo.grnet.gr/vre_dashboard:20200429-3
    restart: always
@@ -107,15 +111,13 @@ services:
     # Please include the protocol, i.e. "https://".
     # Note: Only used if REVERSE_PROXY is true.
     FORCE_ROOT_URL: 'https://sdc-test.argo.grnet.gr'
+    #FORCE_ROOT_URL: 'sdc-test.argo.grnet.gr'
     # 
     # 7. This makes sure that https is used in HTML links, HTML forms etc.
     # (served by Laravel) if service runs behind a reverse proxy, i.e.
     # forceScheme() is enforced in Laravel.
     # Note: Only used if REVERSE_PROXY is true.
     FORCE_SCHEME: 'https'
-    # 8. JupyterHub... Not used anymore...??
-    DIVA_HUB_KEY: 'xxx'
-    #
    labels:
     - vre
 
@@ -148,16 +150,14 @@ services:
   ### nextcloud ###
   #################
 
-  # POST-OSTENDE: 20190929
-
   workspace:
    image: registry-sdc.argo.grnet.gr/vre_nextcloud:20200426-1
    volumes:
+     # which ones to keep for persistent? I think both, but not sure
      - /nfs-export:/var/www/html/data:rw
      - ./nextcloud:/var/www/html:rw
    restart: always
    ports:
-     #- "81:80" # closed port 81 on 20200513
      - "80"
    networks:
      - vre_dash
@@ -165,7 +165,7 @@ services:
     # Make sure that dashboard is allowed to access nextcloud:
     trusted_domains: 'sdc-test.argo.grnet.gr'
     # Make sure that the automatic detection of hostnames for redirects
-    # (done by nextcloud) works also if nextcloud runs behing a reverse proxy.
+    # (done by nextcloud) works also if nextcloud runs behind a reverse proxy.
     # Please see: https://github.com/nextcloud/server/blob/master/config/config.sample.php#L436
     overwritehost: 'sdc-test.argo.grnet.gr:8001'
     overwriteprotocol: 'https'
