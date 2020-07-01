@@ -51,7 +51,7 @@ services:
   ### dashboard        ###
   ########################
   dashboard:
-   image: registry-sdc.argo.grnet.gr/vre_dashboard:20200429-3
+   image: registry-sdc.argo.grnet.gr/vre_dashboard:20200630-2
    restart: always
    depends_on:
     - db
@@ -120,7 +120,7 @@ services:
   #################
 
   workspace:
-   image: registry-sdc.argo.grnet.gr/vre_nextcloud:20200426-1
+   image: registry-sdc.argo.grnet.gr/vre_nextcloud:20200630-2
    volumes:
      # which ones to keep for persistent? I think both, but not sure
      - /nfs-export:/var/www/html/data:rw
