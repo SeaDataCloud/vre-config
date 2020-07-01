@@ -1,35 +1,13 @@
 version: '3.3'
 
 services:
-
-  # PROXY:
-  nginx:
-    image: nginx
-    restart: always
-    volumes:
-      - ./nginx_proxy.conf:/etc/nginx/conf.d/default.conf
-      - ../HEALTH/healthcheck_nginx.sh:/bin/healthcheck.sh
-      - ../../SECURITY/ssl/certs/cert_and_chain.crt:/etc/ssl/certs/myhost.crt:ro
-      - ../../SECURITY/ssl/certs/private:/etc/ssl/private/myhost.key:ro
-    ports:
-      - "8194:443"
-    networks:
-      - vre_odv_o_extractor_network
-    depends_on:
-      - webodv
-    healthcheck:
-      test: ["CMD", "/bin/healthcheck.sh"]
-      interval: 60s
-      timeout: 30s
-      retries: 5
-
-  webodv:
-   image: registry-sdc.argo.grnet.gr/vre_webodv:20200429-1
+  odv_pub_extractor:
+   image: registry-sdc.argo.grnet.gr/vre_webodv:20200625-6
    restart: always
    depends_on:
     - db
    ports:
-    - "80"
+    - 80
    volumes:
        # PKTenv
        - ./settings/PKTenv:/var/www/html/webodv/.env
@@ -45,6 +23,7 @@ services:
        - /nfs-export:/var/www/html/webodv/storage/app/private_data:rw
    networks:
     - vre_odv_o_extractor_network
+    - vre
    environment:
     # 1. Does the service run behind a reverse proxy?
     # If , makes sure that the FORCE_ROOT_URL is used in all HTML links,
@@ -58,7 +37,7 @@ services:
     # is enforced in Laravel.
     # Please include the protocol, i.e. "https://".
     # Note: Only used if REVERSE_PROXY is true.
-    FORCE_ROOT_URL: 'https://sdc-test.argo.grnet.gr:8194'
+    FORCE_ROOT_URL: 'https://sdc-test.argo.grnet.gr/odv/extractor/public'
     # 
     # 3. This makes sure that https is used in HTML links, HTML forms etc.
     # (served by Laravel) if service runs behind a reverse proxy, i.e.
@@ -68,7 +47,7 @@ services:
     #
     # 4. Dashboard URL, for authentication: ODV asks this URL for token
     # verification.
-    dashboard_url: 'https://sdc-test.argo.grnet.gr'
+    dashboard_url: 'dashboard'
     #
     # 5. Some needed paths to the settings and data etc.
     webodv_service: extractor
@@ -104,4 +83,6 @@ services:
 
 networks:
   vre_odv_o_extractor_network:
+    external: true
+  vre:
     external: true
