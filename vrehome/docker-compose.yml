@@ -81,7 +81,7 @@ services:
     divavip: https://bluewhale.dkrz.de/divavip
     diva: https://bluewhale.dkrz.de/diva
     rrr: https://bluewhale.dkrz.de/rrr
-    import: https://sdc-vre-stfc-01.rl.ac.uk:8191/import_service_init
+    import: https://sdc-test.argo.grnet.gr/odv/extractor/private/webodv/import
     extractor: https://sdc-vre-stfc-01.rl.ac.uk:8191/sdc
     qc: https://sdc-test.argo.grnet.gr:8191/webodv
     p_extractor: https://sdc-test.argo.grnet.gr/odv/extractor/private/webodv
