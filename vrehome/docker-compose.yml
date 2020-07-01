@@ -9,7 +9,9 @@ services:
    image: mysql/mysql-server:8.0.0
    restart: always
    volumes:
+    # this must be mounted to make the user db persistent:
     - ./mysql_data/:/var/lib/mysql/:rw
+    # always keep this bind-mounted, it's for initialisation:
     - ./mysql_resources/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
    environment:
     MYSQL_ROOT_PASSWORD: xxxxxx
@@ -63,15 +65,8 @@ services:
     VRE_SERVICES: rrr,p_extractor,p_explorer,o_extractor,o_explorer,extractor,import,qc,kill_wsodv,diva,divavip,viz,erddap,fileselector,bioqc
     NUM_DISTR: 1
     #
-    # 1. Where odv can reach nextcloud over WebDAV from inside the ODV container
-    # Use http://workspace... if both containers are in same docker-network
-    # Use https://<server> if nextcloud runs somewhere outside
-    NEXTCLOUD_URL_SAMEHOST: http://workspace/remote.php/webdav/
-    NEXTCLOUD_URL: https://sdc-test.argo.grnet.gr/remote.php/webdav/
-    # 
     # 2. Where the VRE tells Unity/B2ACCESS to call us back during authentication
     UNITY_REDIRECT: https://sdc-test.argo.grnet.gr/vre_login/unity/callback
-    FORCE_ROOT_URL: sdc-test.argo.grnet.gr
     # 
     # 3. Where the VRE can reach the nextcloud (via SSH) to create a user during
     # registration (both local registration and Marine-ID authentication)
@@ -111,7 +106,6 @@ services:
     # Please include the protocol, i.e. "https://".
     # Note: Only used if REVERSE_PROXY is true.
     FORCE_ROOT_URL: 'https://sdc-test.argo.grnet.gr'
-    #FORCE_ROOT_URL: 'sdc-test.argo.grnet.gr'
     # 
     # 7. This makes sure that https is used in HTML links, HTML forms etc.
     # (served by Laravel) if service runs behind a reverse proxy, i.e.
