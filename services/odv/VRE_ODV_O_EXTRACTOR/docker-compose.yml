@@ -67,10 +67,10 @@ services:
    image: mysql/mysql-server:8.0.0
    restart: always
    environment:
-    MYSQL_ROOT_PASSWORD: "root"
-    MYSQL_DATABASE: "webodv"
-    MYSQL_USER: "webodv"
-    MYSQL_PASSWORD: "webodv"
+    MYSQL_ROOT_PASSWORD: "xxxxx"
+    MYSQL_DATABASE: "xxxxx"
+    MYSQL_USER: "xxxxx"
+    MYSQL_PASSWORD: "xxxxx"
    networks:
     - vre_odv_o_extractor_network
    #volumes:
