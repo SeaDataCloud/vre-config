@@ -23,7 +23,7 @@ services:
        - /nfs-export:/var/www/html/webodv/storage/app/private_data:rw
    networks:
     - vre_odv_o_extractor_network
-    - vre
+    - vre_proxy
    environment:
     # 1. Does the service run behind a reverse proxy?
     # If , makes sure that the FORCE_ROOT_URL is used in all HTML links,
@@ -84,5 +84,6 @@ services:
 networks:
   vre_odv_o_extractor_network:
     external: true
-  vre:
+  vre_proxy:
     external: true
+
