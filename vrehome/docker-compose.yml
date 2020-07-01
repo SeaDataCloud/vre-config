@@ -55,8 +55,8 @@ services:
    restart: always
    depends_on:
     - db
-   ports:
-    - "80" # Should run on http, no SSL, only locally, no port exposed to outside - SSL is done by reverse proxy!
+   expose:
+    - 80 # Should run on http, no SSL, only locally, no port exposed to outside - SSL is done by reverse proxy!
    networks:
     - vre_dash
     - vre
@@ -126,8 +126,8 @@ services:
      - /nfs-export:/var/www/html/data:rw
      - ./nextcloud:/var/www/html:rw
    restart: always
-   ports:
-     - "80"
+   expose:
+     - 80
    networks:
      - vre_dash
      - vre

@@ -6,7 +6,7 @@ services:
    restart: always
    depends_on:
     - db
-   ports:
+   expose:
     - 80
    volumes:
        # PKTenv
