@@ -12,10 +12,10 @@ services:
     - ./mysql_data/:/var/lib/mysql/:rw
     - ./mysql_resources/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
    environment:
-    MYSQL_ROOT_PASSWORD: root
-    MYSQL_DATABASE: vre
-    MYSQL_USER: vre_admin
-    MYSQL_PASSWORD: sea.data.cloud
+    MYSQL_ROOT_PASSWORD: xxxxxx
+    MYSQL_DATABASE: xxxxxx
+    MYSQL_USER: xxxxxx
+    MYSQL_PASSWORD: xxxxxx
    networks:
     - vre_dash
 
@@ -30,10 +30,10 @@ services:
    environment:
     CRON_SCHEDULE: '10 * * * *' #optional, defaults to hourly.
     MAX_SECONDS_SINCE_LAST: 3610
-    MYSQL_ROOT_PASSWORD: root
-    MYSQL_DATABASE: vre
-    MYSQL_USER: vre_admin
-    MYSQL_PASSWORD: sea.data.cloud
+    MYSQL_ROOT_PASSWORD: xxxxxx
+    MYSQL_DATABASE: xxxxxx
+    MYSQL_USER: xxxxxx
+    MYSQL_PASSWORD: xxxxxx
     # optional
     #MYSQL_PORT: 3306
     #MYSQL_HOST: 'db'
@@ -57,6 +57,7 @@ services:
     - "80" # Should run on http, no SSL, only locally, no port exposed to outside - SSL is done by reverse proxy!
    networks:
     - vre_dash
+    - vre
    environment:
     REVERSE_PROXY: 1
     VRE_SERVICES: rrr,p_extractor,p_explorer,o_extractor,o_explorer,extractor,import,qc,kill_wsodv,diva,divavip,viz,erddap,fileselector,bioqc
@@ -80,7 +81,7 @@ services:
     # Must be reachable from the client, as they are integrated using iframes
     # Can be comma-separated lists
     bioqc: https://jellyfish.argo.grnet.gr/bioqc/app_dev.php
-    workspace: https://sdc-test.argo.grnet.gr:8001/index.php/apps/loginviapost/login
+    workspace: https://sdc-test.argo.grnet.gr/workspace/index.php/apps/loginviapost/login
     fileselector: https://sdc-test.argo.grnet.gr:7788
     divavip: https://bluewhale.dkrz.de/divavip
     diva: https://bluewhale.dkrz.de/diva
@@ -88,11 +89,10 @@ services:
     import: https://sdc-vre-stfc-01.rl.ac.uk:8191/import_service_init
     extractor: https://sdc-vre-stfc-01.rl.ac.uk:8191/sdc
     qc: https://sdc-test.argo.grnet.gr:8191/webodv
-    p_extractor: https://sdc-test.argo.grnet.gr:8192/webodv
-    p_explorer: https://sdc-test.argo.grnet.gr:8193/webodv
-    o_extractor: https://sdc-test.argo.grnet.gr:8194/webodv
-    o_explorer: https://sdc-test.argo.grnet.gr:8195/webodv
-    kill_wsodv: https://sdc-vre-stfc-01.rl.ac.uk:8191/kill_wsodv
+    p_extractor: https://sdc-test.argo.grnet.gr/odv/extractor/private/webodv
+    p_explorer: https://sdc-test.argo.grnet.gr/odv/explorer/private/webodv
+    o_extractor: https://sdc-test.argo.grnet.gr/odv/extractor/public/webodv
+    o_explorer: https://sdc-test.argo.grnet.gr/odv/explorer/public/webodv
     erddap: https://jellyfish.argo.grnet.gr/erddap/hub/login?next
     viz: https://jellyfish.argo.grnet.gr/viz/rest/login
     syncer: http://syncer_proxy/sync/bidirectional/
@@ -121,31 +121,6 @@ services:
    labels:
     - vre
 
-  #############
-  ### nginx ###
-  #############
-  proxy_for_dashboard:
-    image: nginx:1.17.10
-    restart: always
-    volumes:
-      - ./nginx_dashboard.conf:/etc/nginx/conf.d/default.conf
-      - ./HEALTH/healthcheck_nginx.sh:/bin/healthcheck.sh
-      - ../cert/cert.pem:/etc/ssl/certs/myhost.crt:ro
-      - ../cert/cert.key:/etc/ssl/private/myhost.key:ro
-      - /var/vre-health/vre-health.json:/srv/vre/vre_health.json:ro
-    ports:
-      - "443:443"
-      - "80:80"
-    networks:
-      - vre_dash
-    depends_on:
-      - dashboard
-    healthcheck:
-      test: ["CMD", "/bin/healthcheck.sh"]
-      interval: 60s
-      timeout: 30s
-      retries: 5
-
   #################
   ### nextcloud ###
   #################
@@ -161,41 +136,22 @@ services:
      - "80"
    networks:
      - vre_dash
+     - vre
    environment:
     # Make sure that dashboard is allowed to access nextcloud:
     trusted_domains: 'sdc-test.argo.grnet.gr'
     # Make sure that the automatic detection of hostnames for redirects
     # (done by nextcloud) works also if nextcloud runs behind a reverse proxy.
     # Please see: https://github.com/nextcloud/server/blob/master/config/config.sample.php#L436
-    overwritehost: 'sdc-test.argo.grnet.gr:8001'
+    overwritehost: 'sdc-test.argo.grnet.gr'
+    overwritewebroot: 'workspace'
     overwriteprotocol: 'https'
-
-  #############
-  ### nginx ###
-  #############
-  proxy_for_workspace:
-    image: nginx:1.17.10
-    restart: always
-    volumes:
-      - ./nginx_workspace.conf:/etc/nginx/conf.d/default.conf
-      - ./nginx_workspace_http.conf:/etc/nginx/nginx.conf
-      - ./HEALTH/healthcheck_nginx.sh:/bin/healthcheck.sh
-      - ../cert/cert.pem:/etc/ssl/certs/myhost.crt:ro
-      - ../cert/cert.key:/etc/ssl/private/myhost.key:ro
-    ports:
-      - "8001:443"
-    networks:
-      - vre_dash
-    depends_on:
-      - workspace
-    healthcheck:
-      test: ["CMD", "/bin/healthcheck.sh"]
-      interval: 60s
-      timeout: 30s
-      retries: 5
+    overwrite.cli.url: 'http://localhost/workspace'
 
 networks:
   vre_dash:
+    external: true
+  vre:
     external: true
 
     
