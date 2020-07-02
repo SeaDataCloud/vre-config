@@ -7,9 +7,9 @@ services:
     restart: always
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ../HEALTH/healthcheck_nginx.sh:/bin/healthcheck.sh
-      - ../SECURITY/ssl/certs/cert_and_chain.crt:/etc/ssl/certs/myhost.crt:ro
-      - ../SECURITY/ssl/certs/private:/etc/ssl/private/myhost.key:ro
+      - /root/HEALTH/healthcheck_nginx.sh:/bin/healthcheck.sh
+      - /root/SECURITY/ssl/certs/cert_and_chain.crt:/etc/ssl/certs/myhost.crt:ro
+      - /root/SECURITY/ssl/certs/private:/etc/ssl/private/myhost.key:ro
       - ./favicon-32x32.png:/etc/nginx/html/favicon.ico
     ports:
       - 443:443
