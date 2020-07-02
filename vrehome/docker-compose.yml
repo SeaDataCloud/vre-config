@@ -57,7 +57,7 @@ services:
   ### dashboard        ###
   ########################
   dashboard:
-   image: registry-sdc.argo.grnet.gr/vre_dashboard:20200630-2
+   image: registry-sdc.argo.grnet.gr/vre_dashboard:20200702-5
    restart: always
    depends_on:
     - db
@@ -126,9 +126,11 @@ services:
   #################
 
   workspace:
-   image: registry-sdc.argo.grnet.gr/vre_nextcloud:20200630-2
+   image: registry-sdc.argo.grnet.gr/vre_nextcloud:20200702-3
    volumes:
      # which ones to keep for persistent? I think both, but not sure
+     # Seb: yes both. First is only the user data, second is the database stuff
+     # Problem: If the full nextcloud is mouted I cannot update the nextcloud container ?!?!
      - /nfs-export:/var/www/html/data:rw
      - ./nextcloud:/var/www/html:rw
    restart: always
