@@ -2,21 +2,20 @@ version: '3.3'
 
 services:
 
-  nginx_deltares:
+  nginx:
     image: nginx
+    networks:
+      - deltares
     restart: always
     volumes:
-      - ./nginx-deltares.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
       - ../HEALTH/healthcheck_nginx.sh:/bin/healthcheck.sh
-      - ../SECURITY/ssl/certs/cert_and_chain.crt:/etc/ssl/certs/myhost.crt:ro
-      - ../SECURITY/ssl/private/priv.key:/etc/ssl/private/myhost.key:ro
     ports:
-      - "8003:443" # nginx is exposed to 8003 outside
-    networks:
-      - vre-dev
+      - "80" # nginx is exposed to 8003 outside
     depends_on:
       - rest
       - static
+    command: [nginx-debug, '-g', 'daemon off;']
     healthcheck:
       test: ["CMD", "/bin/healthcheck.sh"]
       interval: 60s
@@ -24,46 +23,29 @@ services:
       retries: 5
 
   rest:
-    image: openearth/sdc-visualization-service
-    restart: always
-    ports:
-      - "5000" # no exposure to outside, no SSL (nginx handles that)
+    image: registry-sdc.argo.grnet.gr/sdc-visualization-service:build-2020-05-22T1951
+    volumes:
+      - /var/viz_data/public:/data/public
+      - /home/vre/nextcloud_data/:/data/user
+      - work:/data/work
     networks:
-      - vre-dev
+      - deltares
+    restart: always
 
   static:
-    image: openearth/sdc-visualization-static
-    restart: always
-    ports:
-      - "80" # no exposure to outside, no SSL (nginx handles that)
+    image: registry-sdc.argo.grnet.gr/sdc-visualization-static:build-2020-06-23T1349
+    volumes:
+      - /var/viz_data/public/climatology/:/usr/share/nginx/html/models
     networks:
-      - vre-dev
-    environment:
-      # 1. Does the service run behind a reverse proxy?
-      # If , makes sure that the FORCE_ROOT_URL is used in all HTML links,
-      # HTML forms etc. (served by Laravel) if service runs behind a
-      # reverse proxy, i.e. forceRootUrl() is enforced in Laravel.
-      # Please use 1 for true and 0 for false!
-      REVERSE_PROXY: 1 # 1=true!
-      #
-      # 2. This URL is used in HTML links, HTML forms etc. (served by
-      # Laravel) if service runs behind a reverse proxy, i.e. forceRootUrl()
-      # is enforced in Laravel.
-      # Please include the protocol, i.e. "https://".
-      # Note: Only used if REVERSE_PROXY is true.
-      FORCE_ROOT_URL: 'https://xxx.xxx.xx:8003'
-      # 
-      # 3. This makes sure that https is used in HTML links, HTML forms etc.
-      # (served by Laravel) if service runs behind a reverse proxy, i.e.
-      # forceScheme() is enforced in Laravel.
-      # Note: Only used if REVERSE_PROXY is true.
-      FORCE_SCHEME: 'https'
-      #
-      # 4. URL of the file selector
-      FILE_SELECTOR_URL: "https://xxx.xxx.xx:8003/webdav-fileselector"
-
+      - deltares
+    restart: always
 
 networks:
-  vre-dev:
-    external: true
+  deltares:
+    driver: "bridge"
 
+volumes:
+  storage:
+    driver: local
+  work:
+    driver: local
