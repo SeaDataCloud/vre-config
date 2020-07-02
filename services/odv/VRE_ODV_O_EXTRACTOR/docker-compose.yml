@@ -67,16 +67,16 @@ services:
    image: mysql/mysql-server:8.0.0
    restart: always
    environment:
-    MYSQL_ROOT_PASSWORD: "xxxxx"
-    MYSQL_DATABASE: "xxxxx"
-    MYSQL_USER: "xxxxx"
-    MYSQL_PASSWORD: "xxxxx"
+    MYSQL_ROOT_PASSWORD: "xxxxxx"
+    MYSQL_DATABASE: "xxxxxx"
+    MYSQL_USER: "xxxxxx"
+    MYSQL_PASSWORD: "xxxxxx"
    networks:
     - vre_odv_o_extractor_network
    #volumes:
    # - ./mysql_data_persistent:/var/lib/mysql
    healthcheck:
-    test: "/usr/bin/mysql --user=webodv --password=webodv --silent --execute \"SELECT 1;\"" #please adapt!
+    test: "/usr/bin/mysql --user=xxxxxx --password=xxxxxxx --silent --execute \"SELECT 1;\"" #please adapt!
     interval: 30s
     timeout: 10s
     retries: 5
