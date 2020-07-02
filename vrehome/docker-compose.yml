@@ -20,6 +20,12 @@ services:
     MYSQL_PASSWORD: xxxxxx
    networks:
     - vre_dash
+   healthcheck:
+    test: "/usr/bin/mysql --user=xxxxxx --password=xxxxxx --silent --execute \"SELECT 1;\"" # please adapt!
+    interval: 30s
+    timeout: 10s
+    retries: 5
+
 
   ################################
   ### SQL dump tool for backup ###
