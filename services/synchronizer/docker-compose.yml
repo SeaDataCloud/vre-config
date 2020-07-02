@@ -12,19 +12,18 @@ services:
    volumes:
      # Source directory:
      # Must be readable by the user who runs the syncer (33):
-     # until 20200424: - /root/vrehome/nextcloud/nextcloud_all:/srv/syncer/source/
      - /nfs-export:/srv/syncer/source/
      # Target directory: Only if local syncing is being used!
      # I assume this must also be writeable by the same
-     - ./local_test_target/:/srv/syncer/localtarget/
+     #- ./local_test_target/:/srv/syncer/localtarget/
      # Public key to be used for logging in to the remote hosts:
      # JELLY:- ./vre-sync-key:/srv/syncer/KEYS/privkey:ro
      - ./vre-sync-key-bluewhale:/srv/syncer/KEYS/privkey:ro
      # File containing the info about the remote hosts
      - ./remotehosts.json:/srv/syncer/remotehosts.json:ro
      # SSL certs:
-     - ../cert/cert.pem:/srv/jupyterhub/ssl/certs/myhost_cert_and_chain.crt:rw
-     - ../cert/cert.key:/srv/jupyterhub/ssl/private/myhost.key:rw
+     - /root/cert/cert.pem:/srv/jupyterhub/ssl/certs/myhost_cert_and_chain.crt:rw
+     - /root/cert/cert.key:/srv/jupyterhub/ssl/private/myhost.key:rw
      # Config for uwsgi:
      # Volume to contain the socket to communicate with nginx:
      - wsgi_volume:/srv/syncer/wsgi_socket/
@@ -59,11 +58,11 @@ services:
       # Volume to contain the socket to communicate with Flask via uwsgi:
       - wsgi_volume/:/srv/syncer/wsgi_socket/
       # Healthcheck and SSL certs:
-      - ../HEALTH/healthcheck_nginx.sh:/bin/healthcheck.sh
-      - ../cert/cert.pem:/etc/ssl/certs/myhost.crt:rw
-      - ../cert/cert.key:/etc/ssl/private/myhost.key:rw
+      - /root/HEALTH/healthcheck_nginx.sh:/bin/healthcheck.sh
+      - /root/cert/cert.pem:/etc/ssl/certs/myhost.crt:rw
+      - /root/cert/cert.key:/etc/ssl/private/myhost.key:rw
     ports:
-      - "5000:443"
+      - 5000:443
     depends_on:
       - syncer
     networks:
