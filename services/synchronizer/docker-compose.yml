@@ -2,37 +2,82 @@ version: '3.3'
 
 services:
   syncer:
-   #image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200313-as33 # removed because added _sync
-   #image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200427-as33 # does not add _sync anymore
+   #image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200313-as33 # because added _sync
+   #image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200427-as33 # does not add _sync anymore 
    #image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200428-1-as33 # adds /files/
    image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200428-3-as33  # removes /files/ again. Must decide between all or individual.
    restart: always
-   ports:
-    - 5000:5000
+   expose:
+    - 5000
    volumes:
      # Source directory:
-     # Must be readable by the user who runs the syncer (33 or 999):
-     - /path/to/nextcloud_data/:/srv/syncer/source/
+     # Must be readable by the user who runs the syncer (33):
+     # until 20200424: - /root/vrehome/nextcloud/nextcloud_all:/srv/syncer/source/
+     - /nfs-export:/srv/syncer/source/
      # Target directory: Only if local syncing is being used!
      # I assume this must also be writeable by the same
-     - /path/to/localsync/nextcloud_data/:/srv/syncer/localtarget/
+     - ./local_test_target/:/srv/syncer/localtarget/
      # Public key to be used for logging in to the remote hosts:
-     - ./KEYS/vre-rsync-key:/srv/syncer/KEYS/privkey:ro
+     # JELLY:- ./vre-sync-key:/srv/syncer/KEYS/privkey:ro
+     - ./vre-sync-key-bluewhale:/srv/syncer/KEYS/privkey:ro
      # File containing the info about the remote hosts
      - ./remotehosts.json:/srv/syncer/remotehosts.json:ro
      # SSL certs:
-     - /path/to/ssl/certs/cert_and_chain.pem:/srv/jupyterhub/ssl/certs/myhost_cert_and_chain.crt:rw
-     - /path/to/ssl/private/priv.key:/srv/jupyterhub/ssl/private/myhost.key:rw
+     - ../cert/cert.pem:/srv/jupyterhub/ssl/certs/myhost_cert_and_chain.crt:rw
+     - ../cert/cert.key:/srv/jupyterhub/ssl/private/myhost.key:rw
+     # Config for uwsgi:
+     # Volume to contain the socket to communicate with nginx:
+     - wsgi_volume:/srv/syncer/wsgi_socket/
+     # Mounted since 20200514
+     - .unison:/var/www/.unison/
    environment:
-      LOCAL_SUBDIR: 'files/Work/'
-      HOST: 'manatee'
-      LOCAL_URL_FOR_FORM: 'manatee.abc.org' # Probably not needed anymore!
-      WHITELIST_SERVERS: 'seahorse.abc.org,seagull.xyz.org,dolphin.abc.org'
+      LOG_LEVEL: 'DEBUG'
+      LOCAL_SUBDIR: 'files/'
+      THIS_HOST: 'sdc-test' # host where this runs
+      THIS_SITE: 'athina' # site where this runs
+      LOCAL_URL_FOR_FORM: 'myhost.foo.bar:890'
+      WHITELIST_SERVERS: 'jellyfish.argo.grnet.gr,bluewhale.dkrz.de'
+      #USE_FOR_INDIVIDUAL_USERS: 'true' # default 'true'
+      #REGEX_ARG: 'Regex ^vre_.*' # default 'Regex ^vre_.*'
    labels:
     - "Synchronization using rsync or unison."
+   healthcheck:
+      test: ["CMD", "uwsgi", "--connect-and-read",  "/srv/syncer/wsgi_socket/stats.sock"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
    networks:
-      - vre
+      - vre_dash
+
+  syncer_proxy:
+    image: nginx
+    restart: always
+    volumes:
+      # Two sets of nginx config need to be passed:
+      - ./nginx_wsgi.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx_main_altered.conf:/etc/nginx/nginx.conf
+      # Volume to contain the socket to communicate with Flask via uwsgi:
+      - wsgi_volume/:/srv/syncer/wsgi_socket/
+      # Healthcheck and SSL certs:
+      - ../HEALTH/healthcheck_nginx.sh:/bin/healthcheck.sh
+      - ../cert/cert.pem:/etc/ssl/certs/myhost.crt:rw
+      - ../cert/cert.key:/etc/ssl/private/myhost.key:rw
+    ports:
+      - "5000:443"
+    depends_on:
+      - syncer
+    networks:
+      - vre_dash
+    healthcheck:
+      test: ["CMD", "/bin/healthcheck.sh"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+
+volumes:
+  wsgi_volume:
 
 networks:
-  vre
+  vre_dash:
     external: true
+

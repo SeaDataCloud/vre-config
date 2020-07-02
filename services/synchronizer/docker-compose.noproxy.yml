@@ -1,0 +1,38 @@
+version: '3.3'
+
+services:
+  syncer:
+   #image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200313-as33 # removed because added _sync
+   #image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200427-as33 # does not add _sync anymore
+   #image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200428-1-as33 # adds /files/
+   image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200428-3-as33  # removes /files/ again. Must decide between all or individual.
+   restart: always
+   ports:
+    - 5000:5000
+   volumes:
+     # Source directory:
+     # Must be readable by the user who runs the syncer (33 or 999):
+     - /path/to/nextcloud_data/:/srv/syncer/source/
+     # Target directory: Only if local syncing is being used!
+     # I assume this must also be writeable by the same
+     - /path/to/localsync/nextcloud_data/:/srv/syncer/localtarget/
+     # Public key to be used for logging in to the remote hosts:
+     - ./KEYS/vre-rsync-key:/srv/syncer/KEYS/privkey:ro
+     # File containing the info about the remote hosts
+     - ./remotehosts.json:/srv/syncer/remotehosts.json:ro
+     # SSL certs:
+     - /path/to/ssl/certs/cert_and_chain.pem:/srv/jupyterhub/ssl/certs/myhost_cert_and_chain.crt:rw
+     - /path/to/ssl/private/priv.key:/srv/jupyterhub/ssl/private/myhost.key:rw
+   environment:
+      LOCAL_SUBDIR: 'files/Work/'
+      HOST: 'manatee'
+      LOCAL_URL_FOR_FORM: 'manatee.abc.org' # Probably not needed anymore!
+      WHITELIST_SERVERS: 'seahorse.abc.org,seagull.xyz.org,dolphin.abc.org'
+   labels:
+    - "Synchronization using rsync or unison."
+   networks:
+      - vre_dash
+
+networks:
+  vre_dash
+    external: true
