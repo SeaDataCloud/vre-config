@@ -85,4 +85,3 @@ networks:
   vre_proxy:
     external: true
 
-
