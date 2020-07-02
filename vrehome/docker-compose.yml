@@ -83,7 +83,7 @@ services:
     # Can be comma-separated lists
     bioqc: https://jellyfish.argo.grnet.gr/bioqc/app_dev.php
     workspace: https://sdc-test.argo.grnet.gr/workspace/index.php/apps/loginviapost/login
-    fileselector: https://sdc-test.argo.grnet.gr:7788
+    fileselector: https://sdc-test.argo.grnet.gr/fileselector
     divavip: https://bluewhale.dkrz.de/divavip
     diva: https://bluewhale.dkrz.de/diva
     rrr: https://bluewhale.dkrz.de/rrr
@@ -154,4 +154,4 @@ networks:
   vre_proxy:
     external: true
 
-    
+
