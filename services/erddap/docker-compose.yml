@@ -56,7 +56,7 @@ services:
       PORT_NAME: '443'
       HOST_WHERE_IS_ERDDAP_DATA: '/home/vre/erddap_servicedata'
       SERVICE_PORT_IN_CONTAINER: 8091
-      FILESELECTOR_URL: 'https://sdc-test.argo.grnet.gr:7788'
+      FILESELECTOR_URL: 'https://sdc-test.argo.grnet.gr/fileselector'
 
     healthcheck:
       test: ["CMD", "/bin/healthcheck.sh"]
