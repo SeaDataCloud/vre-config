@@ -1,4 +1,5 @@
 version: '3.3'
+
 services:
   fileselector:
    image: registry-sdc.argo.grnet.gr/vre_fileselector:20200424-4
@@ -7,13 +8,13 @@ services:
    volumes:
     - /nfs-export:/var/www/html/fileselector/storage/app/data
    networks:
-    - vre_dash
+    - vre_proxy
    environment:
-    dashboard_url: vrehome_dashboard_1 # this is needed for the service_auth                                                                     
+    dashboard_url: dashboard # this is needed for the service_auth                                                                     
     FORCE_ROOT_URL: 'http://sdc-test.argo.grnet.gr/fileselector'
     FORCE_SCHEME: 'https'
 
 networks:
-   vre_dash:
+   vre_proxy:
      external: true
 
