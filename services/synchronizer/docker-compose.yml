@@ -2,7 +2,10 @@ version: '3.3'
 
 services:
   syncer:
-   image: registry-sdc.argo.grnet.gr/syncer:20191129-as33 
+   #image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200313-as33 # removed because added _sync
+   #image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200427-as33 # does not add _sync anymore
+   #image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200428-1-as33 # adds /files/
+   image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200428-3-as33  # removes /files/ again. Must decide between all or individual.
    restart: always
    ports:
     - 5000:5000
