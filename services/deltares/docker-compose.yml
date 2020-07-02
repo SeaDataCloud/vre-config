@@ -9,13 +9,14 @@ services:
     restart: always
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-      - ../HEALTH/healthcheck_nginx.sh:/bin/healthcheck.sh
-    ports:
-      - "80" # nginx is exposed to 8003 outside
+      - /root/HEALTH/healthcheck_nginx.sh:/bin/healthcheck.sh
+    expose:
+      - 80 # nginx is exposed to outside
     depends_on:
       - rest
       - static
     command: [nginx-debug, '-g', 'daemon off;']
+    # TODO SWITCH OFF DEBUG MODE
     healthcheck:
       test: ["CMD", "/bin/healthcheck.sh"]
       interval: 60s
@@ -26,6 +27,7 @@ services:
     image: registry-sdc.argo.grnet.gr/sdc-visualization-service:build-2020-05-22T1951
     volumes:
       - /var/viz_data/public:/data/public
+      # TODO NO DATA HERE:
       - /home/vre/nextcloud_data/:/data/user
       - work:/data/work
     networks:
