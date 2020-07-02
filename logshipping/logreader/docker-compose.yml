@@ -1,0 +1,27 @@
+version: '3.3'
+
+# https://www.docker.elastic.co/
+
+services:
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:7.6.2
+    restart: always
+    user: root
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - /var/lib/docker/containers:/var/lib/docker/containers
+      - /root/HEALTH/healthcheck_filebeat.sh:/bin/healthcheck.sh:ro
+    networks:
+      - logshipping
+    healthcheck:
+      test: ["CMD", "/bin/healthcheck.sh"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+
+networks:
+  logshipping:
+    external: true
+
+
