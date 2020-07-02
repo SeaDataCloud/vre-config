@@ -1,7 +1,0 @@
-create database `wsodv-manager`;
-grant usage on *.* to smieruch@localhost identified by 'webodv_xyz';
-grant all privileges on `wsodv-manager`.* to smieruch@localhost ;
-
-create database `service-urls`;
-grant usage on *.* to smieruch@localhost identified by 'webodv_xyz';
-grant all privileges on `service-urls`.* to smieruch@localhost ;

@@ -1,11 +1,11 @@
 version: '3.3'
-# VERSION 20200428
+# VERSION 20200702
 
 services:
   hub_erddap:
     image: registry-sdc.argo.grnet.gr/jupyterhub_vre:20200428
     restart: always
-    ports:
+    expose:
       - 8000
     volumes:
       # Docker Socket (needed to spawn containers)
@@ -15,7 +15,7 @@ services:
       # Where NextCloud accounts will be mounted:
       - /nfs-import:/usr/share/userdirectories/:rw
       # Health check:
-      - ../HEALTH/healthcheck_jupyterhub.sh:/bin/healthcheck.sh
+      - /root/HEALTH/healthcheck_jupyterhub.sh:/bin/healthcheck.sh
     cap_add:
       - SYS_ADMIN
     networks:
