@@ -3,6 +3,8 @@
 import subprocess
 import sys
 
+prefix = raw_input('Please enter container prefix (e.g. "jupyter"). Containers whose name start with this will be offered for deletion.')
+
 
 #
 # Finding all running/not running containers:
@@ -18,7 +20,7 @@ output = output.split('\n')
 # Collecting all names of containers to stop
 # and delete:
 which_to_delete = []
-STARTWITH = 'jupyter-'
+STARTWITH = prefix or 'jupyter-'
 
 for line in output:
 
@@ -73,3 +75,4 @@ for i in xrange(n):
     p2 = subprocess.call(['docker', 'rm', name])
 
 print('Done!')
+
