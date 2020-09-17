@@ -103,17 +103,43 @@ def check_when_last_logged_in(username, user_login_info):
     last_login = datetime.datetime.strptime(last_login, '%Y-%M-%DT%M:%S')
     return last_login
 
+def request_login_times(api_url, secret):
+    try:
+        resp = requests.post(api_url, data=dict(secret=secret))
+
+    except RequestException as e:
+        LOGGER.error('Error while querying login times: %s' % e)
+        LOGGEr.info('Bye!')
+        sys.exit(1)
+
+    if resp.stat_code == 404:
+        LOGGER.error('Error while querying login times: Received 404. Wrong URL?')
+        LOGGEr.info('Bye!')
+        sys.exit(1)
+    elif 'Login with Marine ID' in resp.content:
+        LOGGER.error('Error while querying login times: Not logged in. Wrong password?')
+
+    # Convert to JSON
+    try:
+        user_login_info = resp.json()
+    except json.decoder.JSONDecodeError as e:
+        LOGGER.error('Error while querying login times: Could not read JSON response (%s)' % e)
+        LOGGEr.info('Bye!')
+        sys.exit(1)
+
+    return user_login_info
+
 def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, days):
     if days is None or days == 0:
         LOGGER.debug('Not checking for last login.')
         return candidates_to_delete
 
-    # TODO test if url there and ok. treat exceptions
-
     which_to_delete = []
-    user_login_info = requests.post(api_url, data=dict(secret=secret))
-    user_login_info = user_login_info.json()
 
+    # Request user login times from API (this may exit)
+    user_login_info = request_login_times(api, secret)
+
+    # Get username and matching login time:
     wont_delete = []
     for candidate in candidates_to_delete:
         username = get_username_for_container(candidate, docker_client)
