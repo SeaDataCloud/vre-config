@@ -27,7 +27,7 @@ def find_all_running_containers():
     output, error = process.communicate()
     return output.split('\n')
 
-def find_container_names(output, startswith='jupyter-'):
+def find_container_names(output, startswith, yes):
     '''
     Collecting all names of containers to stop
     and delete:
@@ -51,11 +51,14 @@ def find_container_names(output, startswith='jupyter-'):
             LOGGER.debug('Ignoring "%s"...' % name)
             continue
 
-        var = raw_input("Delete '%s' ? Type 'y'" % name)
-        if var == 'y':
+        if yes:
             which_to_delete.append(name)
         else:
-            LOGGER.info("You entered %s. Will not delete this one." % var)
+            var = raw_input("Delete '%s' ? Type 'y'" % name)
+            if var == 'y':
+                which_to_delete.append(name)
+            else:
+                LOGGER.info("You entered %s. Will not delete this one." % var)
 
     return which_to_delete
 
@@ -138,6 +141,8 @@ if __name__ == '__main__':
         help='The secret to query the API to get info about login times.')
     parser.add_argument("--url", action="store",
         help='The URL to query to get info about login times.')
+    parser.add_argument("-y", "--yes", action="store",
+        help="Do not ask for reconfirm (useful for scripting).")
     parser.add_argument('prefix', help='Container name should start with this.')
     myargs = parser.parse_args()
 
@@ -161,7 +166,7 @@ if __name__ == '__main__':
         sys.exit()
 
     # Find container names starting with <prefix>
-    which_to_delete = find_container_names(output, myargs.prefix)
+    which_to_delete = find_container_names(output, myargs.prefix, myargs.yes)
     if len(which_to_delete) == 0:
         LOGGER.info('No containers found starting with %s. Exiting.' % myargs.prefix)
         sys.exit()
@@ -173,7 +178,7 @@ if __name__ == '__main__':
     else:
         days = int(only_old)
         which_to_delete = check_if_old_enough(candidates_to_delete,
-            myargs.url, myargs.password, doclient, 7)
+            myargs.url, myargs.password, doclient, days)
 
     # Print all that will be deleted:
     LOGGER.debug('Okay, thanks. We will stop and delete all these:')
@@ -181,10 +186,11 @@ if __name__ == '__main__':
         LOGGER.debug(' * %s' % name)
 
     # Re-asking for permission to stop and delete them all
-    var = raw_input("Okay? Type 'y'")
-    if not var == 'y':
-        LOGGER.info('Not stopping or deleting anything. Bye!')
-        sys.exit()
+    if not myargs.yes:
+        var = raw_input("Okay? Type 'y'")
+        if not var == 'y':
+            LOGGER.info('Not stopping or deleting anything. Bye!')
+            sys.exit()
 
     delete_them(which_to_delete)
 
