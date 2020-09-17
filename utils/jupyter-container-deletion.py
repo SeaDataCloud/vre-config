@@ -7,8 +7,7 @@ import datetime
 import docker
 import argparse
 
-SECRET = 'foobar'
-URL = 'https://endpoint-for-user-login-info'
+
 
 # TODO: All should be done using docker API
 
@@ -126,15 +125,22 @@ if __name__ == '__main__':
         help='The secret to query the API to get info about login times.')
     parser.add_argument("--url", action="store",
         help='The URL to query to get info about login times.')
+    parser.add_argument('prefix', help='Container name should start with this.')
     myargs = parser.parse_args()
 
     # Docker client
     doclient = docker.APIClient()
 
     # Which names to delete
-    prefix = raw_input('Please enter container prefix (e.g. "jupyter"). Containers whose name start with this will be offered for deletion.')
     output = find_all_running_containers()
-    which_to_delete = find_container_names(output, prefix)
+    if len(output) == 0:
+        print('No containers found. Exiting.')
+        sys.exit()
+
+    which_to_delete = find_container_names(output, myargs.prefix)
+    if len(which_to_delete) == 0:
+        print('No containers found starting with %s. Exiting.' % myargs.prefix)
+        sys.exit()
 
     # Check for each container whether they are old enough
     only_old = raw_input('Should we only delete containers of users that have not logged in since some days? How many days? Type a number, or "n" for no.')
