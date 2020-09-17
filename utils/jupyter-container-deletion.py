@@ -103,7 +103,13 @@ def check_when_last_logged_in(username, user_login_info):
     last_login = datetime.datetime.strptime(last_login, '%Y-%M-%DT%M:%S')
     return last_login
 
-def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, days=7):
+def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, days):
+    if days is None or days == 0:
+        LOGGER.debug('Not checking for last login.')
+        return candidates_to_delete
+
+    # TODO test if url there and ok. treat exceptions
+
     which_to_delete = []
     user_login_info = requests.post(api_url, data=dict(secret=secret))
     user_login_info = user_login_info.json()
@@ -129,6 +135,42 @@ def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, da
 
     return which_to_delete
 
+def should_we_check_login(myargs):
+    days = None
+
+    # Via command line:
+    if myargs.days:
+
+        if myargs.days == 0:
+            LOGGER.debug('Not checking for last login, as you '+
+                'specified "--days 0".')
+            days = None
+
+        else:
+            days = myargs.days
+
+    # Ask user:
+    else:
+        question = 'Should we only delete containers of users'+ \
+            ' that have not logged in since some days? How many'+ \
+            ' days? Type a number, type "0" or "n" for no.'
+        reply = raw_input(question)
+        if reply == 'n' or reply == '0':
+            LOGGER.debug('Not checking for last login, as you typed "%s".'
+                % reply)
+        else:
+            days = int(reply)
+
+    # Check if we have URL and password for login check:
+    if days is not None:
+        if myargs.url is None:
+            LOGGER.warn('Cannot check for last login without a URL! Bye!')
+            sys.exit()
+        if myargs.password is None:
+            LOGGER.warn('Cannot check for last login without a password! Bye!')
+            sys.exit()
+
+    return days # can be None
 
 if __name__ == '__main__':
 
@@ -141,6 +183,8 @@ if __name__ == '__main__':
         help='The secret to query the API to get info about login times.')
     parser.add_argument("--url", action="store",
         help='The URL to query to get info about login times.')
+    parser.add_argument("-d", "--days", type=int, action="store",
+        help="Delete after how many days since user's last login? ")
     parser.add_argument("-y", "--yes", action="store",
         help="Do not ask for reconfirm (useful for scripting).")
     parser.add_argument('prefix', help='Container name should start with this.')
@@ -171,12 +215,11 @@ if __name__ == '__main__':
         LOGGER.info('No containers found starting with %s. Exiting.' % myargs.prefix)
         sys.exit()
 
-    # Check for each container whether they are old enough
-    only_old = raw_input('Should we only delete containers of users that have not logged in since some days? How many days? Type a number, or "n" for no.')
-    if only_old == 'n':
-        pass
-    else:
-        days = int(only_old)
+    # Is check for last login desired?
+    days = should_we_check_login(myargs)
+    
+    if days is not None:
+        # Check for each container whether they are old enough
         which_to_delete = check_if_old_enough(candidates_to_delete,
             myargs.url, myargs.password, doclient, days)
 
