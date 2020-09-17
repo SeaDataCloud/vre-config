@@ -5,12 +5,17 @@ import sys
 import requests
 import datetime
 import docker
+import argparse
 
 SECRET = 'foobar'
 URL = 'https://endpoint-for-user-login-info'
 
 # TODO: All should be done using docker API
-# TODO: URL and SECRET should be configurable
+
+PROGRAM_DESCRIP = '''This script deletes containers whose names
+ start with specific prefixes and whose users have not
+ logged in for a while.'''
+VERSION = '20200917'
 
 
 def find_all_running_containers():
@@ -92,13 +97,13 @@ def check_when_last_logged_in(username, user_login_info):
     last_login = datetime.datetime.strptime(last_login, '%Y-%M-%DT%M:%S')
     return last_login
 
-def check_if_old_enough(candidates_to_delete, days=7):
+def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, days=7):
     which_to_delete = []
-    user_login_info = requests.post(URL, data=dict(secret=SECRET))
+    user_login_info = requests.post(api_url, data=dict(secret=secret))
     user_login_info = user_login_info.json()
 
     for candidate in candidates_to_delete:
-        username = get_username_for_container(candidate)
+        username = get_username_for_container(candidate, docker_client)
         last_login = check_when_last_logged_in(username, user_login_info)
         diff = datetime.datetime.now() - last_login
         if diff.days > days:
@@ -112,7 +117,21 @@ def check_if_old_enough(candidates_to_delete, days=7):
 
 if __name__ == '__main__':
 
+    # Get commandline args
+    parser = argparse.ArgumentParser(description=PROGRAM_DESCRIP)
+    parser.add_argument('--version', action='version',
+        version='Version: %s' % VERSION)
+    parser.add_argument('--verbose', '-v', action="store_true")
+    parser.add_argument("-p","--password", action="store",
+        help='The secret to query the API to get info about login times.')
+    parser.add_argument("--url", action="store",
+        help='The URL to query to get info about login times.')
+    myargs = parser.parse_args()
+
+    # Docker client
     doclient = docker.APIClient()
+
+    # Which names to delete
     prefix = raw_input('Please enter container prefix (e.g. "jupyter"). Containers whose name start with this will be offered for deletion.')
     output = find_all_running_containers()
     which_to_delete = find_container_names(output, prefix)
@@ -123,7 +142,8 @@ if __name__ == '__main__':
         pass
     else:
         days = int(only_old)
-        which_to_delete = check_if_old_enough(which_to_delete, days)
+        which_to_delete = check_if_old_enough(candidates_to_delete,
+            myargs.url, myargs.password, doclient, 7)
 
     # Re-asking for permission to stop and delete them all
     print('Okay, thanks. We will stop and delete all these:')
