@@ -4,28 +4,41 @@ import subprocess
 import sys
 import requests
 import datetime
-import docker
 import argparse
 import logging
 
+try:
+    import docker
+except ImportError as e:
+    pass
 
 LOGGER = logging.getLogger(__name__)
 
-
-# TODO: All should be done using docker API
+# TODO: Dockerize
 
 PROGRAM_DESCRIP = '''This script deletes containers whose names
  start with specific prefixes and whose users have not
  logged in for a while.'''
-VERSION = '20200917'
+VERSION = '20200918'
 
-
-def find_all_running_containers():
-    # TODO use docker api
+def find_all_existing_containers_plainpython():
     cmd = ['docker', 'ps', '-a']
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     output, error = process.communicate()
     return output.split('\n')
+
+def find_all_existing_containers(docker_client):
+    all_containers = []
+
+    if docker_client is None:
+        return find_all_existing_containers_plainpython()
+
+    for container in docker_client.containers(all=True):
+        names = container['Names']
+        all_containers.append(names[0])
+        if not len(names) == 0:
+            LOGGER.warning('This container has several names: %s. Using the first one.' % names)
+    return all_containers
 
 def find_container_names(output, startswith, yes):
     '''
@@ -58,11 +71,11 @@ def find_container_names(output, startswith, yes):
             if var == 'y':
                 which_to_delete.append(name)
             else:
-                LOGGER.info("You entered %s. Will not delete this one." % var)
+                LOGGER.info("You entered %s. Will not delete this one: %s" % (var, name))
 
     return which_to_delete
 
-def delete_them(which_to_delete):
+def delete_them_plainpython(which_to_delete):
     '''
     Stopping and deleting.
     This takes some time.
@@ -81,6 +94,31 @@ def delete_them(which_to_delete):
         LOGGER.debug('%s/%s: Stopping and removing "%s"...' % (i+1, n, name))
         p1 = subprocess.call(['docker', 'stop', name])
         p2 = subprocess.call(['docker', 'rm', name])
+
+    LOGGER.debug('Finished deleting!')
+
+def delete_them(which_to_delete, docker_client):
+    '''
+    Stopping and deleting.
+    This takes some time.
+    '''
+
+    if docker_client is None:
+        return delete_them_plainpython(which_to_delete)
+
+    n = len(which_to_delete)
+
+    if n == 0:
+        LOGGER.info('No containers to be stopped. Bye!')
+        sys.exit()
+
+    LOGGER.info('Stopping and removing %s containers. This will take some seconds...' % n)
+
+    for i in xrange(n):
+        name = which_to_delete[i]
+        LOGGER.debug('%s/%s: Stopping and removing "%s"...' % (i+1, n, name))
+        docker_client.stop(name)
+        docker_client.remove_container(name)
 
     LOGGER.debug('Finished deleting!')
 
@@ -156,13 +194,18 @@ def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, da
     if len(wont_delete) > 0:
         tmp = '%s (%s days)' % wont_delete.pop()
         for item in wont_delete:
-            tmp += ', (%s (%s)' % item)
+            tmp += ', (%s (%s)' % item
         LOGGER.info('Will not delete: %s (%s days) ')
 
     return which_to_delete
 
-def should_we_check_login(myargs):
+def should_we_check_login(myargs, doclient):
     days = None
+
+    if doclient is None:
+        LOGGER.debug('Not checking for last login, as we have '+
+                'no docker API library.')
+        return None
 
     # Via command line:
     if myargs.days:
@@ -227,10 +270,20 @@ if __name__ == '__main__':
         root.setLevel(logging.DEBUG)
     
     # Docker client
-    doclient = docker.APIClient()
+    try:
+        doclient = docker.APIClient()
+    except NameError:
+
+        if myargs.days and myargs.days > 0:
+            LOGGER.warning('Cannot check for last login, as we have '+
+                'no docker API library! Bye.')
+            sys.exit()
+        else:
+            LOGGER.warning('No docker library found. Will use plain python. Restricted functionality.')
+            doclient = None # works with plain python then
 
     # Find all container names
-    output = find_all_running_containers()
+    output = find_all_existing_containers(doclient)
     if len(output) == 0:
         LOGGER.info('No containers found. Exiting.')
         sys.exit()
@@ -242,7 +295,11 @@ if __name__ == '__main__':
         sys.exit()
 
     # Is check for last login desired?
-    days = should_we_check_login(myargs)
+    days = should_we_check_login(myargs, doclient)
+
+    if days is not None and doclient is None:
+        LOGGER.info('No docker API client found. Cannot check login times.')
+        days = None
     
     if days is not None:
         # Check for each container whether they are old enough
@@ -250,18 +307,18 @@ if __name__ == '__main__':
             myargs.url, myargs.password, doclient, days)
 
     # Print all that will be deleted:
-    LOGGER.debug('Okay, thanks. We will stop and delete all these:')
+    LOGGER.debug('We will stop and delete all these:')
     for name in which_to_delete:
         LOGGER.debug(' * %s' % name)
 
     # Re-asking for permission to stop and delete them all
     if not myargs.yes:
-        var = raw_input("Okay? Type 'y'")
+        var = raw_input("Proceed with deletion? Type 'y'")
         if not var == 'y':
             LOGGER.info('Not stopping or deleting anything. Bye!')
             sys.exit()
 
-    delete_them(which_to_delete)
+    delete_them(which_to_delete, doclient)
 
-    LOGGER.debug('Done!')
+    LOGGER.info('Done! Bye!')
 
