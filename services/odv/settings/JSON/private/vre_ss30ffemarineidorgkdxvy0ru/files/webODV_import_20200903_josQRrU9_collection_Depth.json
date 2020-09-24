@@ -1,0 +1,54 @@
+{
+    "datasetname": "webODV_import_20200903>josQRrU9>collection_Depth",
+    "header": "webODV_import_20200903>josQRrU9>collection_Depth.odv",
+    "path": "\/var\/www\/html\/webodv\/storage\/app\/private\/vre_ss30ffemarineidorgkdxvy0ru\/files\/webODV_import_20200903\/josQRrU9\/collection_Depth.odv",
+    "permission": "ReadWrite",
+    "disable_exports": "dummy",
+    "auto_shutdown": "-auto_shutdown",
+    "text": "",
+    "services": {
+        "Data Extraction": {
+            "disable_exports": "dummy",
+            "auto_shutdown": "-auto_shutdown"
+        },
+        "Data Exploration": {
+            "disable_exports": "dummy",
+            "auto_shutdown": "-auto_shutdown"
+        }
+    },
+    "services_texts": {
+        "Data Extraction": "The data extraction service provides fast and easy to use cruise, domain and variable selection functionality and download of different file formats (netcdf, odv, ASCII)",
+        "Data Exploration": "ODV-online provides analysis and visualization services for a wide range of environmental data over the Internet. Browser window user interface and functionality mimick interface and functionality of the popular Ocean Data View software (ODV, <a href=\"https:\/\/odv.awi.de\" target=\"_blank\">https:\/\/odv.awi.de<\/a>). This allows previous ODV users to use ODV-online productively without any learning requirement.<br><br>For further information see the ODV-online help document or the <a href=\"https:\/\/odv.awi.de\/documentation\" target=\"_blank\">ODV documentation<\/a>."
+    },
+    "extractor_info": {
+        "download_allowed": true,
+        "point_size": 0.5,
+        "dates": [
+            "01\/01\/1850",
+            "12\/31\/2021"
+        ],
+        "default_koordinates": [
+            "-1e10",
+            "1e10",
+            "-1e10",
+            "1e10"
+        ],
+        "mandatory_output_vars": [],
+        "default_output_vars": [],
+        "cruises": [],
+        "station_info_show": true,
+        "cruises_show": true,
+        "zoom_show": true,
+        "left_mouse_click_on_map": true,
+        "map_domain_show": true,
+        "date_show": true,
+        "required_variables_show": true,
+        "point_size_show": false,
+        "reset_show": true,
+        "outliers_show": false,
+        "default_x_visualization": 2,
+        "default_y_visualization": 1,
+        "depth_var_num": 1
+    },
+    "output_var_extra_text": ""
+}
