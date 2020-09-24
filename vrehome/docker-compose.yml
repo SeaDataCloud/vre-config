@@ -70,7 +70,7 @@ services:
     - ${DATA_PATH}:/var/www/html/vre/storage/app/nc
    environment:
     REVERSE_PROXY: 1
-    VRE_SERVICES: rrr,p_extractor,p_explorer,o_extractor,o_explorer,extractor,import,qc,kill_wsodv,diva,divavip,viz,erddap,fileselector,bioqc,webodv
+    VRE_SERVICES: rrr,diva,divavip,viz,erddap,fileselector,bioqc,webodv
     NUM_DISTR: 1
     #
     # 2. Where the VRE tells Unity/B2ACCESS to call us back during authentication
@@ -89,14 +89,7 @@ services:
     divavip: https://bluewhale.dkrz.de/divavip
     diva: https://bluewhale.dkrz.de/diva
     rrr: https://bluewhale.dkrz.de/rrr
-    import: https://sdc-test.argo.grnet.gr/odv/extractor/private/webodv/import
-    extractor: https://sdc-vre-stfc-01.rl.ac.uk:8191/sdc
-    qc: https://sdc-test.argo.grnet.gr:8191/webodv
     webodv: https://sdc-test.argo.grnet.gr/odv/
-    p_extractor: https://sdc-test.argo.grnet.gr/odv/extractor/private/webodv
-    p_explorer: https://sdc-test.argo.grnet.gr/odv/explorer/private/webodv
-    o_extractor: https://sdc-test.argo.grnet.gr/odv/extractor/public/webodv
-    o_explorer: https://sdc-test.argo.grnet.gr/odv/explorer/public/webodv
     erddap: https://jellyfish.argo.grnet.gr/erddap/hub/login?next
     viz: https://jellyfish.argo.grnet.gr/viz/rest/login
     syncer: http://syncer_proxy/sync/bidirectional/
