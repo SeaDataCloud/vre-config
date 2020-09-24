@@ -74,7 +74,7 @@ services:
     NUM_DISTR: 1
     #
     # 2. Where the VRE tells Unity/B2ACCESS to call us back during authentication
-    UNITY_REDIRECT: https://sdc-test.argo.grnet.gr/vre_login/unity/callback
+    UNITY_REDIRECT: https://${FQDM}/vre_login/unity/callback
     # 
     # 3. Where the VRE can reach the nextcloud (via SSH) to create a user during
     # registration (both local registration and Marine-ID authentication)
@@ -83,15 +83,15 @@ services:
     # 4. URLs of the VRE services
     # Must be reachable from the client, as they are integrated using iframes
     # Can be comma-separated lists
-    bioqc: https://jellyfish.argo.grnet.gr/bioqc/app_dev.php
-    workspace: https://sdc-test.argo.grnet.gr/workspace/index.php/apps/loginviapost/login
-    fileselector: https://sdc-test.argo.grnet.gr/fileselector
-    divavip: https://bluewhale.dkrz.de/divavip
-    diva: https://bluewhale.dkrz.de/diva
-    rrr: https://bluewhale.dkrz.de/rrr
-    webodv: https://sdc-test.argo.grnet.gr/odv/
-    erddap: https://jellyfish.argo.grnet.gr/erddap/hub/login?next
-    viz: https://jellyfish.argo.grnet.gr/viz/rest/login
+    bioqc: https://${BIOQCHOST}/bioqc/app_dev.php
+    workspace: https://${FQDM}/workspace/index.php/apps/loginviapost/login
+    fileselector: https://${FILESELHOST}/fileselector
+    divavip: https://${DIVAHOST}/divavip
+    diva: https://${DIVAHOST}/diva
+    rrr: https://${DIVAHOST}/rrr
+    webodv: https://${ODVHOST}/odv/
+    erddap: https://${ERDDAPHOST}/erddap/hub/login?next
+    viz: https://${VIZHOST}/viz/rest/login
     syncer: http://syncer_proxy/sync/bidirectional/
     syncer_rsync: http://syncer_proxy/sync/to_remote/
     # 
@@ -107,7 +107,7 @@ services:
     # is enforced in Laravel.
     # Please include the protocol, i.e. "https://".
     # Note: Only used if REVERSE_PROXY is true.
-    FORCE_ROOT_URL: 'https://sdc-test.argo.grnet.gr'
+    FORCE_ROOT_URL: 'https://${FQDM}'
     # 
     # 7. This makes sure that https is used in HTML links, HTML forms etc.
     # (served by Laravel) if service runs behind a reverse proxy, i.e.
@@ -137,11 +137,11 @@ services:
      - vre_proxy
    environment:
     # Make sure that dashboard is allowed to access nextcloud:
-    trusted_domains: 'sdc-test.argo.grnet.gr'
+    trusted_domains: '${FQDM}'
     # Make sure that the automatic detection of hostnames for redirects
     # (done by nextcloud) works also if nextcloud runs behind a reverse proxy.
     # Please see: https://github.com/nextcloud/server/blob/master/config/config.sample.php#L436
-    overwritehost: 'sdc-test.argo.grnet.gr'
+    overwritehost: '${FQDM}'
     overwritewebroot: 'workspace'
     overwriteprotocol: 'https'
     overwrite.cli.url: 'http://localhost/workspace'
@@ -152,4 +152,11 @@ networks:
   vre_proxy:
     external: true
 
-
+# Athens:
+#FQDM=sdc-test.argo.grnet.gr
+#DIVAHOST=bluewhale.dkrz.de
+#VIZHOST=jellyfish.argo.grnet.gr
+#BIOQCHOST=jellyfish.argo.grnet.gr
+#ODVHOST=sdc-test.argo.grnet.gr
+#ERDDAPHOST=jellyfish.argo.grnet.gr
+#FILESELHOST=sdc-test.argo.grnet.gr
