@@ -7,8 +7,7 @@ services:
     restart: always
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./odv_html:/srv/odv  # TODO What for?
-      - ../HEALTH/healthcheck_nginx.sh:/bin/healthcheck.sh
+      - /opt/healthchecks/healthcheck_nginx.sh:/bin/healthcheck.sh
       - ../SECURITY/ssl/certs/star.argo.grnet.gr.crt:/etc/ssl/certs/myhost.crt:ro
       - ../SECURITY/ssl/certs/star.argo.grnet.gr.key:/etc/ssl/private/myhost.key:ro
       - ./favicon-32x32.png:/etc/nginx/html/favicon.ico
