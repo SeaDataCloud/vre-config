@@ -10,18 +10,19 @@ services:
    restart: always
    volumes:
     # this must be mounted to make the user db persistent:
-    - ./mysql_data/:/var/lib/mysql/:rw
+    - ${DB_PATH}:/var/lib/mysql/:rw
     # always keep this bind-mounted, it's for initialisation:
-    - ./mysql_resources/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    - ${DB_INIT}:/docker-entrypoint-initdb.d
    environment:
-    MYSQL_ROOT_PASSWORD: xxxxxx
-    MYSQL_DATABASE: xxxxxx
-    MYSQL_USER: xxxxxx
-    MYSQL_PASSWORD: xxxxxx
+    MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    MYSQL_DATABASE: ${MYSQL_DATABASE}
+    MYSQL_USER: ${MYSQL_USER}
+    MYSQL_PASSWORD: ${MYSQL_PASSWORD}
    networks:
     - vre_dash
    healthcheck:
-    test: "/usr/bin/mysql --user=xxxxxx --password=xxxxxx --silent --execute \"SELECT 1;\"" # please adapt!
+    #test: "/usr/bin/mysql --user=xxxxxx --password=xxxxxx --silent --execute \"SELECT 1;\"" # please adapt!
+    test: "/usr/bin/mysql --user=vre_admin --password=${MYSQL_PASSWORD} --silent --execute \"SELECT 1;\"" # please adapt!
     interval: 30s
     timeout: 10s
     retries: 5
@@ -38,10 +39,10 @@ services:
    environment:
     CRON_SCHEDULE: '10 * * * *' #optional, defaults to hourly.
     MAX_SECONDS_SINCE_LAST: 3610
-    MYSQL_ROOT_PASSWORD: xxxxxx
-    MYSQL_DATABASE: xxxxxx
-    MYSQL_USER: xxxxxx
-    MYSQL_PASSWORD: xxxxxx
+    MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    MYSQL_DATABASE: ${MYSQL_DATABASE}
+    MYSQL_USER: ${MYSQL_USER}
+    MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     # optional
     #MYSQL_PORT: 3306
     #MYSQL_HOST: 'db'
@@ -57,7 +58,7 @@ services:
   ### dashboard        ###
   ########################
   dashboard:
-   image: registry-sdc.argo.grnet.gr/vre_dashboard:20200702-5
+   image: registry-sdc.argo.grnet.gr/vre_dashboard:20200915-3
    restart: always
    depends_on:
     - db
@@ -66,9 +67,11 @@ services:
    networks:
     - vre_dash
     - vre_proxy
+   volumes:
+    - ${NFS_EXPORT}:/var/www/html/vre/storage/app/nc
    environment:
     REVERSE_PROXY: 1
-    VRE_SERVICES: rrr,p_extractor,p_explorer,o_extractor,o_explorer,extractor,import,qc,kill_wsodv,diva,divavip,viz,erddap,fileselector,bioqc
+    VRE_SERVICES: rrr,p_extractor,p_explorer,o_extractor,o_explorer,extractor,import,qc,kill_wsodv,diva,divavip,viz,erddap,fileselector,bioqc,webodv
     NUM_DISTR: 1
     #
     # 2. Where the VRE tells Unity/B2ACCESS to call us back during authentication
@@ -90,6 +93,7 @@ services:
     import: https://sdc-test.argo.grnet.gr/odv/extractor/private/webodv/import
     extractor: https://sdc-vre-stfc-01.rl.ac.uk:8191/sdc
     qc: https://sdc-test.argo.grnet.gr:8191/webodv
+    webodv: https://sdc-test.argo.grnet.gr/odv/
     p_extractor: https://sdc-test.argo.grnet.gr/odv/extractor/private/webodv
     p_explorer: https://sdc-test.argo.grnet.gr/odv/explorer/private/webodv
     o_extractor: https://sdc-test.argo.grnet.gr/odv/extractor/public/webodv
@@ -126,13 +130,13 @@ services:
   #################
 
   workspace:
-   image: registry-sdc.argo.grnet.gr/vre_nextcloud:20200702-3
+   image: registry-sdc.argo.grnet.gr/vre_nextcloud:20200917-1
    volumes:
      # which ones to keep for persistent? I think both, but not sure
      # Seb: yes both. First is only the user data, second is the database stuff
      # Problem: If the full nextcloud is mouted I cannot update the nextcloud container ?!?!
-     - /nfs-export:/var/www/html/data:rw
-     - ./nextcloud:/var/www/html:rw
+     - ${NFS_EXPORT}:/var/www/html/data:rw
+     - ${NEXTCLOUD_MOUNT}:/var/www/html:rw
    restart: always
    expose:
      - 80
