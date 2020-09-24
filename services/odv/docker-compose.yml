@@ -1,0 +1,91 @@
+version: '3.3'
+
+services:
+  odv:
+   image: registry-sdc.argo.grnet.gr/vre_odv:20200917-1
+   restart: always
+   depends_on:
+    - db
+   expose:
+    - 80
+   volumes:
+       # PKTenv
+       - ./settings/PKTenv:/var/www/html/webodv/.env
+       # ODV installation
+       - ${ODV_PATH}/odv_software:/var/www/html/bin:rw
+       # ODV bathy data
+       - ${ODV_PATH}/ODV:/home/woody/Documents/ODV:rw
+       # webODV settings
+       - ./settings:/var/www/html/webodv/storage/app/settings/settings_webodv:rw
+       # vre mount
+       - ${NFS_EXPORT}:/var/www/html/webodv/storage/app/private:rw
+       # public data
+       - ${ODV_PATH}/ODV_Data:/var/www/html/webodv/storage/app/public:rw
+   networks:
+    - vre_odv_p_extractor_network
+    - vre_proxy
+   environment:
+    # 1. Does the service run behind a reverse proxy?
+    # If , makes sure that the FORCE_ROOT_URL is used in all HTML links,
+    # HTML forms etc. (served by Laravel) if service runs behind a
+    # reverse proxy, i.e. forceRootUrl() is enforced in Laravel.
+    # Please use 1 for true and 0 for false!
+    REVERSE_PROXY: 1 # 1=true!
+    #
+    # 2. This URL is used in HTML links, HTML forms etc. (served by
+    # Laravel) if service runs behind a reverse proxy, i.e. forceRootUrl()
+    # is enforced in Laravel.
+    # Please include the protocol, i.e. "https://".
+    # Note: Only used if REVERSE_PROXY is true.
+    FORCE_ROOT_URL: 'https://sdc-test.argo.grnet.gr/odv/'
+    # 
+    # 3. This makes sure that https is used in HTML links, HTML forms etc.
+    # (served by Laravel) if service runs behind a reverse proxy, i.e.
+    # forceScheme() is enforced in Laravel.
+    # Note: Only used if REVERSE_PROXY is true.
+    FORCE_SCHEME: 'https'
+    #
+    # 4. Dashboard URL, for authentication: ODV asks this URL for token
+    # verification. Now that all are in the same network we can use 'dashboard'
+    dashboard_url: 'dashboard'
+    #
+    # 5. Some needed paths to the settings and data etc.
+    branch_num: 4
+    webodv_service: extractor
+    settings_path: /var/www/html/webodv/storage/app/settings
+    path_to_odv_data: odv_data
+    path_to_odv_settings: settings_webodv
+    path_to_odv_data_2: webodv
+   labels:
+     - "webODV in VRE"
+   healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:80"]
+    interval: 60s
+    timeout: 30s
+    retries: 5
+
+  db:
+   image: mysql/mysql-server:8.0.0
+   restart: always
+   environment:
+    MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    MYSQL_DATABASE: ${MYSQL_DATABASE}
+    MYSQL_USER: ${MYSQL_USER}
+    MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+   networks:
+    - vre_odv_p_extractor_network
+   #volumes:
+   # - ./mysql_data_persistent:/var/lib/mysql
+   healthcheck:
+    test: "/usr/bin/mysql --user=${MYSQL_USER} --password=${MYSQL_PASSWORD} --silent --execute \"SELECT 1;\"" #please adapt!
+    interval: 30s
+    timeout: 10s
+    retries: 5
+
+networks:
+  vre_odv_p_extractor_network:
+    external: true
+  vre_proxy:
+    external: true
+
+
