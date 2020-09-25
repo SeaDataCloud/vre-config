@@ -2,28 +2,24 @@ version: '3.3'
 
 services:
   syncer:
-   #image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200313-as33 # because added _sync
-   #image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200427-as33 # does not add _sync anymore 
-   #image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200428-1-as33 # adds /files/
-   image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200428-3-as33  # removes /files/ again. Must decide between all or individual.
+   image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200428-3-as33  
    restart: always
    expose:
     - 5000
    volumes:
      # Source directory:
      # Must be readable by the user who runs the syncer (33):
-     - /nfs-export:/srv/syncer/source/
+     - ${DATA_PATH}:/srv/syncer/source/
      # Target directory: Only if local syncing is being used!
      # I assume this must also be writeable by the same
-     #- ./local_test_target/:/srv/syncer/localtarget/
+     #- ${LOCAL_SYNC_TARGET}/:/srv/syncer/localtarget/
      # Public key to be used for logging in to the remote hosts:
-     # JELLY:- ./vre-sync-key:/srv/syncer/KEYS/privkey:ro
-     - ./vre-sync-key-bluewhale:/srv/syncer/KEYS/privkey:ro
+     - ${PUBLIC_KEY_SSH_RSYNC}:/srv/syncer/KEYS/privkey:ro
      # File containing the info about the remote hosts
      - ./remotehosts.json:/srv/syncer/remotehosts.json:ro
      # SSL certs:
-     - /root/cert/cert.pem:/srv/jupyterhub/ssl/certs/myhost_cert_and_chain.crt:rw
-     - /root/cert/cert.key:/srv/jupyterhub/ssl/private/myhost.key:rw
+     - ${SSL_PRIVATE_KEY}:/srv/jupyterhub/ssl/certs/myhost_cert_and_chain.crt:rw
+     - ${SSL_CERT_CHAIN}:/srv/jupyterhub/ssl/private/myhost.key:rw
      # Config for uwsgi:
      # Volume to contain the socket to communicate with nginx:
      - wsgi_volume:/srv/syncer/wsgi_socket/
@@ -32,11 +28,11 @@ services:
    environment:
       LOG_LEVEL: 'DEBUG'
       LOCAL_SUBDIR: 'files/'
-      THIS_HOST: 'sdc-test' # host where this runs
-      THIS_SITE: 'athina' # site where this runs
+      THIS_HOST: ${THIS_HOST} # host where this runs
+      THIS_SITE: ${THIS_SITE} # site where this runs
       LOCAL_URL_FOR_FORM: 'myhost.foo.bar:890'
       WHITELIST_SERVERS: 'jellyfish.argo.grnet.gr,bluewhale.dkrz.de'
-      #USE_FOR_INDIVIDUAL_USERS: 'true' # default 'true'
+      #USE_FOR_INDIVIDUAL_USERS: 'true' # default: 'true'
       #REGEX_ARG: 'Regex ^vre_.*' # default 'Regex ^vre_.*'
    labels:
     - "Synchronization using rsync or unison."
@@ -58,9 +54,9 @@ services:
       # Volume to contain the socket to communicate with Flask via uwsgi:
       - wsgi_volume/:/srv/syncer/wsgi_socket/
       # Healthcheck and SSL certs:
-      - /root/HEALTH/healthcheck_nginx.sh:/bin/healthcheck.sh
-      - /root/cert/cert.pem:/etc/ssl/certs/myhost.crt:rw
-      - /root/cert/cert.key:/etc/ssl/private/myhost.key:rw
+      - ${PATH_TO_HEALTCHECKS}/healthcheck_nginx.sh:/bin/healthcheck.sh
+      - ${SSL_CERT_CHAIN}:/etc/ssl/certs/myhost.crt:rw
+      - ${SSL_PRIVATE_KEY}:/etc/ssl/private/myhost.key:rw
     ports:
       - 5000:443
     depends_on:
