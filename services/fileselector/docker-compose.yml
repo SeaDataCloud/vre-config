@@ -6,7 +6,7 @@ services:
    expose:
     - 80
    volumes:
-    - /nfs-export:/var/www/html/fileselector/storage/app/data
+    - ${NFS_EXPORT}:/var/www/html/fileselector/storage/app/data
    networks:
     - vre_proxy
    environment:
@@ -17,4 +17,5 @@ services:
 networks:
    vre_proxy:
      external: true
+
 
