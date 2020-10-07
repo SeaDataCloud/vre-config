@@ -19,7 +19,7 @@ LOGGER = logging.getLogger(__name__)
 PROGRAM_DESCRIP = '''This script deletes containers whose names
  start with specific prefixes and whose users have not
  logged in for a while.'''
-VERSION = '20200918'
+VERSION = '20201007'
 
 def find_all_existing_containers_plainpython():
     cmd = ['docker', 'ps', '-a']
@@ -36,7 +36,7 @@ def find_all_existing_containers(docker_client):
     for container in docker_client.containers(all=True):
         names = container['Names']
         all_containers.append(names[0])
-        if not len(names) == 0:
+        if not len(names) == 1:
             LOGGER.warning('This container has several names: %s. Using the first one.' % names)
     return all_containers
 
@@ -59,6 +59,7 @@ def find_container_names(output, startswith, yes):
 
         line = line.split()
         name = line[len(line)-1]
+        name = name.lstrip('/')
 
         if not name.startswith(startswith):
             LOGGER.debug('Ignoring "%s"...' % name)
