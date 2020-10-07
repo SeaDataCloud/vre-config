@@ -175,15 +175,30 @@ def get_username_for_container(containername, docker_client):
         k = kv[0]
         v = kv[1]
         env_dict[k] = v
-    return env_dict['VRE_USERNAME']
-    # TODO Do all containers have this?
-    # At least my jupyters do!
+    try:
+        username = env_dict['VRE_USERNAME']
+        # TODO Do all containers have this?
+        # At least my jupyters do!
+        return username
+    except KeyError as e:
+        LOGGER.debug('Container env: %s' % env_dict)
+        LOGGER.error('KeyError: %s' % e)
+        LOGGER.warning("Cannot verify user's last login if no username is found. Bye!")
+        sys.exit(1)
+    
 
 def check_when_last_logged_in(username, user_login_info):
-    last_login = user_login_info[username] # 2020-09-03T08:41:22.000000Z
-    last_login = last_login[:16] # 2020-09-03T08:41
-    last_login = datetime.datetime.strptime(last_login, '%Y-%M-%DT%M:%S')
-    return last_login
+    try:
+        last_login = user_login_info[username] # 2020-09-03T08:41:22.000000Z
+        last_login = last_login[:16] # 2020-09-03T08:41
+        last_login = datetime.datetime.strptime(last_login, '%Y-%m-%dT%M:%S')
+        return last_login
+    except KeyError as e:
+        LOGGER.debug('User login info: %s' % user_login_info)
+        LOGGER.error('KeyError: %s' % e)
+        LOGGER.warning("Cannot verify user's last login if API returns no info on that. Bye!")
+        sys.exit(1)
+
 
 def request_login_times(api_url, secret):
     try:
