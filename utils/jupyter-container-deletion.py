@@ -25,29 +25,11 @@ def find_all_existing_containers_plainpython():
     cmd = ['docker', 'ps', '-a']
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     output, error = process.communicate()
-    return output.split('\n')
+    output_splitted = output.split('\n')
 
-def find_all_existing_containers(docker_client):
+    # Extract just the names:
     all_containers = []
-
-    if docker_client is None:
-        return find_all_existing_containers_plainpython()
-
-    for container in docker_client.containers(all=True):
-        names = container['Names']
-        all_containers.append(names[0])
-        if not len(names) == 1:
-            LOGGER.warning('This container has several names: %s. Using the first one.' % names)
-    return all_containers
-
-def find_container_names(output, startswith, yes):
-    '''
-    Collecting all names of containers to stop
-    and delete:
-    '''
-    which_to_delete = []
-
-    for line in output:
+    for line in output_splitted:
 
         if line.startswith('CONTAINER'):
             continue
@@ -60,6 +42,33 @@ def find_container_names(output, startswith, yes):
         line = line.split()
         name = line[len(line)-1]
         name = name.lstrip('/')
+        all_containers.append(name)
+
+    return all_containers
+
+def find_all_existing_containers(docker_client):
+    all_containers = []
+
+    if docker_client is None:
+        return find_all_existing_containers_plainpython()
+
+    for container in docker_client.containers(all=True):
+        names = container['Names']
+        if not len(names) == 1:
+            LOGGER.warning('This container has several names: %s. Using the first one.' % names)
+        name = names[0].lstrip('/')
+        all_containers.append(name)
+
+    return all_containers
+
+def find_container_names(output, startswith, yes):
+    '''
+    Collecting all names of containers to stop
+    and delete:
+    '''
+    which_to_delete = []
+
+    for name in output:
 
         if not name.startswith(startswith):
             LOGGER.debug('Ignoring "%s"...' % name)
