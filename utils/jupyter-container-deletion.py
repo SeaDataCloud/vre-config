@@ -194,7 +194,7 @@ def request_login_times(api_url, secret):
         LOGGEr.info('Bye!')
         sys.exit(1)
 
-    if resp.stat_code == 404:
+    if resp.status_code == 404:
         LOGGER.error('Error while querying login times: Received 404. Wrong URL?')
         LOGGEr.info('Bye!')
         sys.exit(1)
@@ -219,7 +219,7 @@ def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, da
     which_to_delete = []
 
     # Request user login times from API (this may exit)
-    user_login_info = request_login_times(api, secret)
+    user_login_info = request_login_times(api_url, secret)
 
     # Get username and matching login time:
     wont_delete = []
@@ -304,7 +304,7 @@ if __name__ == '__main__':
         help='The URL to query to get info about login times.')
     parser.add_argument("-d", "--days", type=int, action="store",
         help="Delete after how many days since user's last login? ")
-    parser.add_argument("-y", "--yes", action="store",
+    parser.add_argument("-y", "--yes", action="store_true",
         help="Do not ask for reconfirm (useful for scripting).")
     parser.add_argument('prefix', help='Container name should start with this.')
     myargs = parser.parse_args()
@@ -354,7 +354,7 @@ if __name__ == '__main__':
 
     # Check for each container whether they are old enough
     if days is not None:
-        which_to_delete = check_if_old_enough(candidates_to_delete,
+        which_to_delete = check_if_old_enough(which_to_delete,
             myargs.url, myargs.password, doclient, days)
 
     # Print all that will be deleted:
