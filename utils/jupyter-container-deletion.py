@@ -261,7 +261,7 @@ def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, da
 def are_days_given(myargs):
 
     # Via command line:
-    if myargs.days:
+    if 'days' in myargs:
 
         if myargs.days == 0:
             LOGGER.debug('Not checking for last login, as you '+
@@ -270,6 +270,11 @@ def are_days_given(myargs):
 
         else:
             return myargs.days
+
+    # If user said --yes, they don't want to be asked, so if they did
+    # not specify --days, then I guess they don't want!
+    elif myargs.yes:
+        return None
 
     # Ask user:
     else:
