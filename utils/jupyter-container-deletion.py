@@ -243,13 +243,7 @@ def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, da
 
     return which_to_delete
 
-def should_we_check_login(myargs, doclient):
-    days = None
-
-    if doclient is None:
-        LOGGER.debug('Not checking for last login, as we have '+
-                'no docker API library.')
-        return None
+def are_days_given(myargs):
 
     # Via command line:
     if myargs.days:
@@ -257,10 +251,10 @@ def should_we_check_login(myargs, doclient):
         if myargs.days == 0:
             LOGGER.debug('Not checking for last login, as you '+
                 'specified "--days 0".')
-            days = None
+            return None
 
         else:
-            days = myargs.days
+            return myargs.days
 
     # Ask user:
     else:
@@ -271,19 +265,31 @@ def should_we_check_login(myargs, doclient):
         if reply == 'n' or reply == '0':
             LOGGER.debug('Not checking for last login, as you typed "%s".'
                 % reply)
+            return None
         else:
-            days = int(reply)
+            try:
+                days = int(reply)
+            except ValueError as e:
+                LOGGER.error('Could not understand the value you typed: %s (%s)' % (reply, e))
+                LOGGER.info('Bye!')
+                sys.exit(1)
+            return days
 
-    # Check if we have URL and password for login check:
-    if days is not None:
-        if myargs.url is None:
-            LOGGER.warn('Cannot check for last login without a URL! Bye!')
-            sys.exit()
-        if myargs.password is None:
-            LOGGER.warn('Cannot check for last login without a password! Bye!')
-            sys.exit()
+def can_we_check_login(myargs, doclient):
 
-    return days # can be None
+    # No URL and password for login check:
+    if myargs.url is None:
+        LOGGER.warn('Cannot check for last login without a URL! Bye!')
+        sys.exit(1)
+    if myargs.password is None:
+        LOGGER.warn('Cannot check for last login without a password! Bye!')
+        sys.exit(1)
+
+    # No Docker client
+    if doclient is None:
+        LOGGER.warn('Cannot check for last login, as we have '+
+                'no docker API library. Bye!')
+        sys.exit(1)
 
 if __name__ == '__main__':
 
@@ -339,15 +345,15 @@ if __name__ == '__main__':
         LOGGER.info('No containers found starting with %s. Exiting.' % myargs.prefix)
         sys.exit()
 
-    # Is check for last login desired?
-    days = should_we_check_login(myargs, doclient)
+    # Does user want us to check login times?
+    days = are_days_given(myargs)
 
-    if days is not None and doclient is None:
-        LOGGER.info('No docker API client found. Cannot check login times.')
-        days = None
-    
+    # Exit if we lack info for checking login times:
     if days is not None:
-        # Check for each container whether they are old enough
+        can_we_check_login(myargs, doclient)
+
+    # Check for each container whether they are old enough
+    if days is not None:
         which_to_delete = check_if_old_enough(candidates_to_delete,
             myargs.url, myargs.password, doclient, days)
 
