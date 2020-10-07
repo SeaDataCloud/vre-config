@@ -21,8 +21,8 @@ LOGGER = logging.getLogger(__name__)
 '''
 
 CREATE TEST CONTAINERS:
-docker run --name bla-haha1 -d alpine tail -f /dev/null
-docker run --name bla-haha2 -d alpine tail -f /dev/null
+docker run --name bla-haha1 -e VRE_USERNAME=franz -d alpine tail -f /dev/null
+docker run --name bla-haha2 -e VRE_USERNAME=vre_blablabla -d alpine tail -f /dev/null
 docker run --name bla-haha3 -d alpine tail -f /dev/null
 
 USAGE:
@@ -186,7 +186,6 @@ def get_username_for_container(containername, docker_client):
         LOGGER.warning("Cannot verify user's last login if no username is found. Bye!")
         sys.exit(1)
     
-
 def check_when_last_logged_in(username, user_login_info):
     try:
         last_login = user_login_info[username] # 2020-09-03T08:41:22.000000Z
@@ -194,11 +193,10 @@ def check_when_last_logged_in(username, user_login_info):
         last_login = datetime.datetime.strptime(last_login, '%Y-%m-%dT%M:%S')
         return last_login
     except KeyError as e:
-        LOGGER.debug('User login info: %s' % user_login_info)
+        LOGGER.debug('User login info for "%s": %s' % (username, user_login_info))
         LOGGER.error('KeyError: %s' % e)
         LOGGER.warning("Cannot verify user's last login if API returns no info on that. Bye!")
         sys.exit(1)
-
 
 def request_login_times(api_url, secret):
     try:
@@ -239,6 +237,7 @@ def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, da
     # Get username and matching login time:
     wont_delete = []
     for candidate in candidates_to_delete:
+
         username = get_username_for_container(candidate, docker_client)
         last_login = check_when_last_logged_in(username, user_login_info)
         diff = datetime.datetime.now() - last_login
@@ -295,7 +294,7 @@ def are_days_given(myargs):
                 sys.exit(1)
             return days
 
-def can_we_check_login(myargs, doclient):
+def exit_if_cannot_login(myargs, doclient):
 
     # No URL and password for login check:
     if myargs.url is None:
@@ -350,7 +349,7 @@ if __name__ == '__main__':
                 'specifying --days"!). Bye.')
             sys.exit()
         else:
-            LOGGER.warning('No docker library found. Will use plain python. Restricted functionality.')
+            LOGGER.warning('No docker library found. Will use plain python.')
             doclient = None # works with plain python then
 
     # Find all container names
@@ -370,7 +369,7 @@ if __name__ == '__main__':
 
     # Exit if we lack info for checking login times:
     if days is not None:
-        can_we_check_login(myargs, doclient)
+        exit_if_cannot_login(myargs, doclient)
 
     # Check for each container whether they are old enough
     if days is not None:
