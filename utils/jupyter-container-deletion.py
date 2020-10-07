@@ -15,6 +15,23 @@ except ImportError as e:
 LOGGER = logging.getLogger(__name__)
 
 # TODO: Dockerize
+# TODO: Write pytests
+
+
+'''
+
+CREATE TEST CONTAINERS:
+docker run --name bla-haha1 -d alpine tail -f /dev/null
+docker run --name bla-haha2 -d alpine tail -f /dev/null
+docker run --name bla-haha3 -d alpine tail -f /dev/null
+
+USAGE:
+python jupyter-container-deletion.py -p xxxx --url https://sdc-test.xxx.gr/getuserauthinfo -d 7 bla
+
+Note: This uses python2 (raw_input, ...)
+
+'''
+
 
 PROGRAM_DESCRIP = '''This script deletes containers whose names
  start with specific prefixes and whose users have not
@@ -22,13 +39,25 @@ PROGRAM_DESCRIP = '''This script deletes containers whose names
 VERSION = '20201007'
 
 def find_all_existing_containers_plainpython():
+    '''
+    Returns a list of container names as strings.
+    '''
+
+    # Get docker ps -a output
     cmd = ['docker', 'ps', '-a']
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     output, error = process.communicate()
     output_splitted = output.split('\n')
+    # Each string is a line of the "docker ps -a" command output:
+    #
+    #'CONTAINER ID   IMAGE      COMMAND                CREATED          STATUS          PORTS   NAMES'
+    #'663ad58662fe   alpine     "tail -f /dev/null"    16 minutes ago   Up 16 minutes           bla-kikiki'
+    #
+    # The first line is the header line. Words are separated by irregular numbers of spaces
+    # (aligned for visual display), which makes empty cells hard to identify.
 
     # Extract just the names:
-    all_containers = []
+    all_container_names = []
     for line in output_splitted:
 
         if line.startswith('CONTAINER'):
@@ -42,14 +71,19 @@ def find_all_existing_containers_plainpython():
         line = line.split()
         name = line[len(line)-1]
         name = name.lstrip('/')
-        all_containers.append(name)
+        all_container_names.append(name)
 
-    return all_containers
+    return all_container_names
 
 def find_all_existing_containers(docker_client):
-    all_containers = []
+    '''
+    Returns a list of container names.
+    [u'/jupyter-franz', u'/jupyter-ina', u'/jupyter-ola', ...]
+    '''
+    all_container_names = []
 
     if docker_client is None:
+        LOGGER.debug('No docker client. Using plain python.')
         return find_all_existing_containers_plainpython()
 
     for container in docker_client.containers(all=True):
@@ -57,18 +91,18 @@ def find_all_existing_containers(docker_client):
         if not len(names) == 1:
             LOGGER.warning('This container has several names: %s. Using the first one.' % names)
         name = names[0].lstrip('/')
-        all_containers.append(name)
+        all_container_names.append(name)
 
-    return all_containers
+    return all_container_names
 
-def find_container_names(output, startswith, yes):
+def filter_container_names(all_container_names, startswith, yes):
     '''
     Collecting all names of containers to stop
     and delete:
     '''
     which_to_delete = []
 
-    for name in output:
+    for name in all_container_names:
 
         if not name.startswith(startswith):
             LOGGER.debug('Ignoring "%s"...' % name)
@@ -286,20 +320,21 @@ if __name__ == '__main__':
 
         if myargs.days and myargs.days > 0:
             LOGGER.warning('Cannot check for last login, as we have '+
-                'no docker API library! Bye.')
+                'no docker API library! (You can run this without '+
+                'specifying --days"!). Bye.')
             sys.exit()
         else:
             LOGGER.warning('No docker library found. Will use plain python. Restricted functionality.')
             doclient = None # works with plain python then
 
     # Find all container names
-    output = find_all_existing_containers(doclient)
-    if len(output) == 0:
+    all_container_names = find_all_existing_containers(doclient)
+    if len(all_container_names) == 0:
         LOGGER.info('No containers found. Exiting.')
         sys.exit()
 
     # Find container names starting with <prefix>
-    which_to_delete = find_container_names(output, myargs.prefix, myargs.yes)
+    which_to_delete = filter_container_names(all_container_names, myargs.prefix, myargs.yes)
     if len(which_to_delete) == 0:
         LOGGER.info('No containers found starting with %s. Exiting.' % myargs.prefix)
         sys.exit()
