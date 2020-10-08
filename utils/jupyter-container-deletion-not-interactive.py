@@ -1,16 +1,13 @@
 #!/usr/bin/env -u python
+# python 3!
 
-import subprocess
 import sys
 import requests
 import datetime
 import time
 import logging
-
-try:
-    import docker
-except ImportError as e:
-    pass
+import docker
+import os
 
 LOGGER = logging.getLogger(__name__)
 
@@ -26,7 +23,11 @@ docker run --name bla-haha2 -e VRE_USERNAME=vre_xxx -d alpine tail -f /dev/null
 docker run --name bla-haha3 -d alpine tail -f /dev/null
 
 USAGE:
-python jupyter-container-deletion.py -p xxxx --url https://sdc-test.xxx.gr/getuserauthinfo -d 7 bla
+API_PASSWORD='xxx'
+API_URL='https://sdc-test.xxx.gr/getuserauthinfo'
+NUM_DAYS_SINCE_LAST_LOGIN=7
+PREFIX='bla'
+python jupyter-container-deletion-not-interactive.py
 
 '''
 
@@ -37,53 +38,12 @@ PROGRAM_DESCRIP = '''This script deletes containers whose names
 VERSION = '20201008'
 EXIT_FAIL = 1
 
-def find_all_existing_containers_plainpython():
-    '''
-    Returns a list of container names as strings.
-    '''
-
-    # Get docker ps -a output
-    cmd = ['docker', 'ps', '-a']
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    output, error = process.communicate()
-    output_splitted = output.split('\n')
-    # Each string is a line of the "docker ps -a" command output:
-    #
-    #'CONTAINER ID   IMAGE      COMMAND                CREATED          STATUS          PORTS   NAMES'
-    #'663ad58662fe   alpine     "tail -f /dev/null"    16 minutes ago   Up 16 minutes           bla-kikiki'
-    #
-    # The first line is the header line. Words are separated by irregular numbers of spaces
-    # (aligned for visual display), which makes empty cells hard to identify.
-
-    # Extract just the names:
-    all_container_names = []
-    for line in output_splitted:
-
-        if line.startswith('CONTAINER'):
-            continue
-
-        line = line.strip()
-
-        if len(line) == 0:
-            continue
-
-        line = line.split()
-        name = line[len(line)-1]
-        name = name.lstrip('/')
-        all_container_names.append(name)
-
-    return all_container_names
-
 def find_all_existing_containers(docker_client):
     '''
     Returns a list of container names.
     [u'/jupyter-franz', u'/jupyter-ina', u'/jupyter-ola', ...]
     '''
     all_container_names = []
-
-    if docker_client is None:
-        LOGGER.debug('No docker client. Using plain python.')
-        return find_all_existing_containers_plainpython()
 
     for container in docker_client.containers(all=True):
         names = container['Names']
@@ -110,37 +70,11 @@ def filter_container_names(all_container_names, startswith):
 
     return which_to_delete
 
-def delete_them_plainpython(which_to_delete):
-    '''
-    Stopping and deleting.
-    This takes some time.
-    '''
-
-    n = len(which_to_delete)
-
-    if n == 0:
-        LOGGER.info('No containers to be stopped.')
-        return True
-
-    LOGGER.info('Stopping and removing %s containers. This will take some seconds...' % n)
-
-    for i in xrange(n):
-        name = which_to_delete[i]
-        LOGGER.debug('%s/%s: Stopping and removing "%s"...' % (i+1, n, name))
-        p1 = subprocess.call(['docker', 'stop', name])
-        p2 = subprocess.call(['docker', 'rm', name])
-
-    LOGGER.info('Finished deleting!')
-    return True
-
 def delete_them(which_to_delete, docker_client):
     '''
     Stopping and deleting.
     This takes some time.
     '''
-
-    if docker_client is None:
-        return delete_them_plainpython(which_to_delete)
 
     n = len(which_to_delete)
 
@@ -288,7 +222,6 @@ def exit_if_cannot_login(url, password, doclient):
                 'no docker API library. Bye!')
         sys.exit(EXIT_FAIL)
 
-
 def one_deletion_run(doclient, prefix, api_url, api_password, days):
 
     # Find all container names
@@ -353,10 +286,14 @@ if __name__ == '__main__':
     handler = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)5s - %(message)s') # with padding!
     handler.setFormatter(formatter)
-    root.addHandler(handler )
-    root.setLevel(logging.INFO)
-    if LOG_LEVEL.lower() == 'debug': # WIP
-        root.setLevel(logging.DEBUG)
+    root.addHandler(handler)
+    lvl = logging.getLevelName(LOG_LEVEL)
+    try:
+        root.setLevel(lvl)
+    except ValueError as e:
+        err = 'Could not understand log level "%s".' % lvl
+        LOGGER.warn(err)
+        sys.exit(EXIT_FAIL)
 
     # Check some args:
     if EVERY is not None:
@@ -378,18 +315,7 @@ if __name__ == '__main__':
             sys.exit(EXIT_FAIL)
    
     # Docker client
-    try:
-        doclient = docker.APIClient()
-    except NameError:
-
-        if NUM_DAYS is not None:
-            LOGGER.warning('Cannot check for last login, as we have '+
-                'no docker API library! (You can run this without '+
-                'specifying --days"!). Bye.')
-            sys.exit(EXIT_FAIL)
-        else:
-            LOGGER.warning('No docker library found. Will use plain python.')
-            doclient = None # works with plain python then
+    doclient = docker.APIClient()
 
     # Run once:
     if EVERY is None:
@@ -421,7 +347,6 @@ if __name__ == '__main__':
             if not success:
                 LOGGER.warning('Stopping. Bye!')
                 sys.exit(EXIT_FAIL)
-
 
             LOGGER.info('Sleeping for %s hours...' % sleep_hours)
             time.sleep(sleep_seconds)

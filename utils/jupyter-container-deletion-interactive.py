@@ -27,7 +27,7 @@ docker run --name bla-haha2 -e VRE_USERNAME=vre_xxx -d alpine tail -f /dev/null
 docker run --name bla-haha3 -d alpine tail -f /dev/null
 
 USAGE:
-python jupyter-container-deletion.py -p xxxx --url https://sdc-test.xxx.gr/getuserauthinfo -d 7 bla
+python jupyter-container-deletion-interactive.py -p xxxx --url https://sdc-test.xxx.gr/getuserauthinfo -d 7 bla
 
 Note: This uses python2 (raw_input, ...)
 
@@ -37,7 +37,7 @@ Note: This uses python2 (raw_input, ...)
 PROGRAM_DESCRIP = '''This script deletes containers whose names
  start with specific prefixes and whose users have not
  logged in for a while.'''
-VERSION = '20201007'
+VERSION = '20201008'
 EXIT_FAIL = 1
 
 def find_all_existing_containers_plainpython():
