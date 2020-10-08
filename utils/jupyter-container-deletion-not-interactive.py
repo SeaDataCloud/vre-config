@@ -35,7 +35,7 @@ python jupyter-container-deletion.py -p xxxx --url https://sdc-test.xxx.gr/getus
 PROGRAM_DESCRIP = '''This script deletes containers whose names
  start with specific prefixes and whose users have not
  logged in for a while.'''
-VERSION = '20201007'
+VERSION = '20201008'
 EXIT_FAIL = 1
 
 def find_all_existing_containers_plainpython():
@@ -110,22 +110,6 @@ def filter_container_names(all_container_names, startswith):
             which_to_delete.append(name)
 
     return which_to_delete
-
-def confirm_container_names(which_to_delete, yes):
-
-    if yes:
-        return which_to_delete
-
-    confirmed = []
-    for name in which_to_delete:
-
-        var = raw_input("Delete '%s' ? Type 'y'" % name)
-        if var == 'y':
-            confirmed.append(name)
-        else:
-            LOGGER.info("You entered %s. Will not delete this one: %s" % (var, name))
-
-    return confirmed
 
 def delete_them_plainpython(which_to_delete):
     '''
@@ -288,47 +272,6 @@ def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, da
 
     return which_to_delete
 
-def are_days_given(myargs):
-    '''
-    Return int number of days, or None if no check is desired.
-    Exits if the value typed by the user could not be understood. WIP.
-    '''
-
-    # Via command line:
-    if 'days' in myargs:
-
-        if myargs.days == 0:
-            LOGGER.debug('Not checking for last login, as you '+
-                'specified "--days 0".')
-            return None
-
-        else:
-            return myargs.days
-
-    # If user said --yes, they don't want to be asked, so if they did
-    # not specify --days, then I guess they don't want!
-    elif myargs.yes:
-        return None
-
-    # Ask user:
-    else:
-        question = 'Should we only delete containers of users'+ \
-            ' that have not logged in since some days? How many'+ \
-            ' days? Type a number, type "0" or "n" for no.'
-        reply = raw_input(question)
-        if reply == 'n' or reply == '0':
-            LOGGER.debug('Not checking for last login, as you typed "%s".'
-                % reply)
-            return None
-        else:
-            try:
-                days = int(reply)
-            except ValueError as e:
-                LOGGER.error('Could not understand the value you typed: %s (%s)' % (reply, e))
-                LOGGER.info('Bye!')
-                sys.exit(EXIT_FAIL)
-            return days
-
 def exit_if_cannot_login(myargs, doclient):
 
     # No URL and password for login check:
@@ -364,8 +307,12 @@ def one_deletion_run(doclient, myargs):
         return True
 
     # Does user want us to check login times?
-    # This may exit if the user types an not-understood one # WIP
-    days = are_days_given(myargs)
+    days = None
+    if 'days' in myargs and myargs.days == 0:
+        LOGGER.debug('Not checking for last login, as you '+
+            'specified "--days 0".')
+    else:
+        days = myargs.days
 
     # Exit if we lack info for checking login times:
     if days is not None:
@@ -386,23 +333,10 @@ def one_deletion_run(doclient, myargs):
             LOGGER.warning('Could not check for login times. Stopping. This may be temporary, so try again.')
             return False
 
-    # Ask user to reconfirm (unless --yes passed)
-    which_to_delete = confirm_container_names(which_to_delete, myargs.yes)
-    if len(which_to_delete) == 0:
-        LOGGER.info('No containers left to delete %s.')
-        return True
-
     # Print all that will be deleted:
     LOGGER.debug('We will stop and delete all these:')
     for name in which_to_delete:
         LOGGER.debug(' * %s' % name)
-
-    # Re-asking for permission to stop and delete them all
-    if not myargs.yes:
-        var = raw_input("Proceed with deletion? Type 'y'")
-        if not var == 'y':
-            LOGGER.info('Not stopping or deleting anything.')
-            return True
 
     success = delete_them(which_to_delete, doclient)
     return success
@@ -420,10 +354,8 @@ if __name__ == '__main__':
         help='The URL to query to get info about login times.')
     parser.add_argument("-d", "--days", type=int, action="store",
         help="Delete after how many days since user's last login? ")
-    parser.add_argument("-y", "--yes", action="store_true",
-        help="Do not ask for reconfirm (useful for scripting).")
     parser.add_argument("-e", "--every", type=int, action="store",
-        help="Run continuously, until stopped, every x hours. Implies --yes.")
+        help="Run continuously, until stopped, every x hours.")
     parser.add_argument('prefix', help='Container name should start with this.')
     myargs = parser.parse_args()
 
@@ -442,13 +374,7 @@ if __name__ == '__main__':
         if myargs.every <= 0:
             LOGGER.error('This value is not allowed for --every: %s. Bye!' % myargs.every)
             sys.exit(EXIT_FAIL)
-
-    if 'every' in myargs and myargs.every is not None:
-        if not myargs.yes:
-            LOGGER.warning('You specified --every, so we will also set --yes.')
-            myargs.yes = True
-
-    
+   
     # Docker client
     try:
         doclient = docker.APIClient()
