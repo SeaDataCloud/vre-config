@@ -95,7 +95,7 @@ def find_all_existing_containers(docker_client):
 
     return all_container_names
 
-def filter_container_names(all_container_names, startswith, yes):
+def filter_container_names(all_container_names, startswith):
     '''
     Collecting all names of containers to stop
     and delete:
@@ -106,18 +106,26 @@ def filter_container_names(all_container_names, startswith, yes):
 
         if not name.startswith(startswith):
             LOGGER.debug('Ignoring "%s"...' % name)
-            continue
-
-        if yes:
-            which_to_delete.append(name)
         else:
-            var = raw_input("Delete '%s' ? Type 'y'" % name)
-            if var == 'y':
-                which_to_delete.append(name)
-            else:
-                LOGGER.info("You entered %s. Will not delete this one: %s" % (var, name))
+            which_to_delete.append(name)
 
     return which_to_delete
+
+def confirm_container_names(which_to_delete, yes):
+
+    if yes:
+        return which_to_delete
+
+    confirmed = []
+    for name in which_to_delete:
+
+        var = raw_input("Delete '%s' ? Type 'y'" % name)
+        if var == 'y':
+            confirmed.append(name)
+        else:
+            LOGGER.info("You entered %s. Will not delete this one: %s" % (var, name))
+
+    return confirmed
 
 def delete_them_plainpython(which_to_delete):
     '''
@@ -182,7 +190,7 @@ def get_username_for_container(containername, docker_client):
         return username
     except KeyError as e:
         LOGGER.debug('Container env: %s' % env_dict)
-        LOGGER.error('KeyError: %s' % e)
+        LOGGER.error('KeyError: %s in env of "%s"' % (e, containername))
         LOGGER.warning("Cannot verify user's last login if no username is found.")
         return None
     
@@ -193,8 +201,8 @@ def check_when_last_logged_in(username, user_login_info):
         last_login = datetime.datetime.strptime(last_login, '%Y-%m-%dT%M:%S')
         return last_login
     except KeyError as e:
-        LOGGER.debug('User login info for "%s": %s' % (username, user_login_info))
-        LOGGER.error('KeyError: %s' % e)
+        LOGGER.debug('User login info for all users: %s' % (user_login_info))
+        LOGGER.error('KeyError: %s (not contained in user login info).' % e)
         LOGGER.warning("Cannot verify user's last login for '%s' if API returns no info on that." % username)
         return None
 
@@ -239,7 +247,7 @@ def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, da
     for candidate in candidates_to_delete:
 
         username = get_username_for_container(candidate, docker_client)
-        if user is None:
+        if username is None:
             wont_delete.append((candidate, 'username unknown'))
             continue
 
@@ -258,10 +266,10 @@ def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, da
 
     # Log:
     if len(wont_delete) > 0:
-        tmp = '%s (%s days)' % wont_delete.pop()
+        tmp = '%s (%s)' % wont_delete.pop()
         for item in wont_delete:
             tmp += ', (%s (%s)' % item
-        LOGGER.info('Will not delete: %s (%s) ')
+        LOGGER.info('Will not delete: %s' % tmp)
 
     return which_to_delete
 
@@ -367,7 +375,7 @@ if __name__ == '__main__':
         sys.exit()
 
     # Find container names starting with <prefix>
-    which_to_delete = filter_container_names(all_container_names, myargs.prefix, myargs.yes)
+    which_to_delete = filter_container_names(all_container_names, myargs.prefix)
     if len(which_to_delete) == 0:
         LOGGER.info('No containers found starting with %s. Exiting.' % myargs.prefix)
         sys.exit()
@@ -386,6 +394,12 @@ if __name__ == '__main__':
         if len(which_to_delete) == 0:
             LOGGER.info('No containers found that are older than %s days. Exiting.' % days)
             sys.exit()
+
+    # Ask user to reconfirm (unless --yes passed)
+    which_to_delete = confirm_container_names(which_to_delete, myargs.yes)
+    if len(which_to_delete) == 0:
+        LOGGER.info('No containers left to delete %s. Exiting.')
+        sys.exit()
 
     # Print all that will be deleted:
     LOGGER.debug('We will stop and delete all these:')
