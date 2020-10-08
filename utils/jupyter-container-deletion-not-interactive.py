@@ -5,7 +5,6 @@ import sys
 import requests
 import datetime
 import time
-import argparse
 import logging
 
 try:
@@ -272,14 +271,14 @@ def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, da
 
     return which_to_delete
 
-def exit_if_cannot_login(myargs, doclient):
+def exit_if_cannot_login(url, password, doclient):
 
     # No URL and password for login check:
-    if myargs.url is None:
+    if url is None:
         LOGGER.warn('Cannot check for last login without a URL! Bye!')
         sys.exit(EXIT_FAIL)
 
-    if myargs.password is None:
+    if password is None:
         LOGGER.warn('Cannot check for last login without a password! Bye!')
         sys.exit(EXIT_FAIL)
 
@@ -290,7 +289,7 @@ def exit_if_cannot_login(myargs, doclient):
         sys.exit(EXIT_FAIL)
 
 
-def one_deletion_run(doclient, myargs):
+def one_deletion_run(doclient, prefix, api_url, api_password, days):
 
     # Find all container names
     all_container_names = find_all_existing_containers(doclient)
@@ -300,30 +299,28 @@ def one_deletion_run(doclient, myargs):
         return True
 
     # Find container names starting with <prefix>
-    which_to_delete = filter_container_names(all_container_names, myargs.prefix)
+    which_to_delete = filter_container_names(all_container_names, prefix)
     if len(which_to_delete) == 0:
-        LOGGER.info('No containers found starting with %s.' % myargs.prefix)
+        LOGGER.info('No containers found starting with %s.' % prefix)
         LOGGER.info('No containers to be deleted.')
         return True
 
     # Does user want us to check login times?
-    days = None
-    if 'days' in myargs and myargs.days == 0:
+    if days == 0:
         LOGGER.debug('Not checking for last login, as you '+
             'specified "--days 0".')
-    else:
-        days = myargs.days
+        days = None
 
     # Exit if we lack info for checking login times:
     if days is not None:
-        exit_if_cannot_login(myargs, doclient)
+        exit_if_cannot_login(api_url, api_password, doclient)
 
     # Check for each container whether they are old enough
     if days is not None:
 
         try:
             which_to_delete = check_if_old_enough(which_to_delete,
-                myargs.url, myargs.password, doclient, days)
+                api_url, api_password, doclient, days)
             if len(which_to_delete) == 0:
                 LOGGER.info('No containers found that are older than %s days.' % days)
                 LOGGER.info('No containers to be deleted.')
@@ -344,20 +341,12 @@ def one_deletion_run(doclient, myargs):
 if __name__ == '__main__':
 
     # Get commandline args
-    parser = argparse.ArgumentParser(description=PROGRAM_DESCRIP)
-    parser.add_argument('--version', action='version',
-        version='Version: %s' % VERSION)
-    parser.add_argument('--verbose', '-v', action="store_true")
-    parser.add_argument("-p","--password", action="store",
-        help='The secret to query the API to get info about login times.')
-    parser.add_argument("--url", action="store",
-        help='The URL to query to get info about login times.')
-    parser.add_argument("-d", "--days", type=int, action="store",
-        help="Delete after how many days since user's last login? ")
-    parser.add_argument("-e", "--every", type=int, action="store",
-        help="Run continuously, until stopped, every x hours.")
-    parser.add_argument('prefix', help='Container name should start with this.')
-    myargs = parser.parse_args()
+    LOG_LEVEL = os.getenv('LOG_LEVEL')
+    URL = os.getenv('API_URL')     # The URL to query to get info about login times.
+    PW = os.getenv('API_PASSWORD') # The secret to query the API to get info about login times.
+    EVERY = os.getenv('EVERY')     # Run continuously, until stopped, every x hours
+    PREFIX = os.getenv('PREFIX')   # Container name should start with this.
+    NUM_DAYS = os.getenv('NUM_DAYS_SINCE_LAST_LOGIN') # Delete after how many days since user's last login?
 
     # Configure logging
     root = logging.getLogger()
@@ -366,13 +355,26 @@ if __name__ == '__main__':
     handler.setFormatter(formatter)
     root.addHandler(handler )
     root.setLevel(logging.INFO)
-    if myargs.verbose:
+    if LOG_LEVEL.lower() == 'debug': # WIP
         root.setLevel(logging.DEBUG)
 
     # Check some args:
-    if 'every' in myargs and myargs.every is not None:
-        if myargs.every <= 0:
-            LOGGER.error('This value is not allowed for --every: %s. Bye!' % myargs.every)
+    if EVERY is not None:
+        try:
+            EVERY = int(EVERY)
+        except ValueError as e:
+            LOGGER.error('This value is not allowed for EVERY: %s. Bye!' % EVERY)
+            sys.exit(EXIT_FAIL)
+
+        if EVERY <= 0:
+            LOGGER.error('This value is not allowed for EVERY: %s. Bye!' % EVERY)
+            sys.exit(EXIT_FAIL)
+
+    if NUM_DAYS is not None:
+        try:
+            NUM_DAYS = int(NUM_DAYS)
+        except ValueError as e:
+            LOGGER.error('This value is not allowed for NUM_DAYS: %s. Bye!' % EVERY)
             sys.exit(EXIT_FAIL)
    
     # Docker client
@@ -380,7 +382,7 @@ if __name__ == '__main__':
         doclient = docker.APIClient()
     except NameError:
 
-        if myargs.days and myargs.days > 0:
+        if NUM_DAYS is not None:
             LOGGER.warning('Cannot check for last login, as we have '+
                 'no docker API library! (You can run this without '+
                 'specifying --days"!). Bye.')
@@ -390,8 +392,8 @@ if __name__ == '__main__':
             doclient = None # works with plain python then
 
     # Run once:
-    if not 'every' in myargs or myargs.every is None:
-        success = one_deletion_run(doclient, myargs)
+    if EVERY is None:
+        success = one_deletion_run(doclient, PREFIX, API_URL, API_PASSWORD, NUM_DAYS)
 
         if not success:
             LOGGER.warning('Stopping. Bye!')
@@ -399,22 +401,22 @@ if __name__ == '__main__':
 
     # Run many times:
     else:
-        sleep_hours = myargs.every
+        sleep_hours = EVERY
         sleep_seconds = 60*60*sleep_hours
         while True:
-            success = one_deletion_run(doclient, myargs)
+            success = one_deletion_run(doclient, PREFIX, API_URL, API_PASSWORD, NUM_DAYS)
 
             if not success:
                 LOGGER.warning('Failed. Trying again (second time) in a minute...')
                 time.sleep(60)
                 LOGGER.warning('Trying again (second time)...')
-                success = one_deletion_run(doclient, myargs)
+                success = one_deletion_run(doclient, PREFIX, API_URL, API_PASSWORD, NUM_DAYS)
 
             if not success:
                 LOGGER.warning('Failed. Trying again (third time) in five minutes...')
                 time.sleep(5*60)
                 LOGGER.warning('Trying again (third time)...')
-                success = one_deletion_run(doclient, myargs)
+                success = one_deletion_run(doclient, PREFIX, API_URL, API_PASSWORD, NUM_DAYS)
 
             if not success:
                 LOGGER.warning('Stopping. Bye!')
