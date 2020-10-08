@@ -86,11 +86,11 @@ def delete_them(which_to_delete, docker_client):
 
     for i in xrange(n):
         name = which_to_delete[i]
-        LOGGER.debug('%s/%s: Stopping and removing "%s"...' % (i+1, n, name))
+        LOGGER.info('%s/%s: Stopping and removing "%s"...' % (i+1, n, name))
         docker_client.stop(name)
         docker_client.remove_container(name)
 
-    LOGGER.debug('Finished deleting!')
+    LOGGER.info('Finished stopping and removing!')
     return True
 
 def get_username_for_container(containername, docker_client):
@@ -370,7 +370,10 @@ if __name__ == '__main__':
                 sys.exit(EXIT_FAIL)
 
             LOGGER.info('Sleeping for %s hours...' % sleep_hours)
-            time.sleep(sleep_seconds)
+            try:
+                time.sleep(sleep_seconds)
+            except KeyboardInterrupt:
+                LOGGER.info('Stopped by user...')
 
     LOGGER.info('Done! Bye!')
 
