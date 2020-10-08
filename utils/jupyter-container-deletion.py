@@ -4,6 +4,7 @@ import subprocess
 import sys
 import requests
 import datetime
+import time
 import argparse
 import logging
 
@@ -30,13 +31,62 @@ python jupyter-container-deletion.py -p xxxx --url https://sdc-test.xxx.gr/getus
 
 Note: This uses python2 (raw_input, ...)
 
+
+TEST CASES:
+#1
+# API rather than plain
+# --yes
+# no --days
+python jupyter-container-deletion.py -p k8T5gh5D --url https://sdc-test.argo.grnet.gr/getuserauthinfo bla -v -y
+
+#2
+# API rather than plain
+# no --yes
+# no --days
+# allow all (OR PART) to be deleted
+# specify 0 (OR n)
+# confirm yes
+
+python jupyter-container-deletion.py -p k8T5gh5D --url https://sdc-test.argo.grnet.gr/getuserauthinfo bla -v 
+
+#3
+python jupyter-container-deletion.py -p k8T5gh5D --url https://sdc-test.argo.grnet.gr/getuserauthinfo bla -v --days 0
+
+#4
+python jupyter-container-deletion.py -p k8T5gh5D --url https://sdc-test.argo.grnet.gr/getuserauthinfo bla -v --days 4
+
+
+
+DONT COMMIT:
+
+SECRET = "k8T5gh5D"
+URL = 'https://sdc-test.argo.grnet.gr/getuserauthinfo'
+
+Cases:
+
+* Command line, --yes (test last!)
+* Being asked for reconfirm
+** yes
+** no
+
+* Delete no container
+* Delete some containers
+
+* Without docker library
+* With docker library
+** With login check
+** No login check
+** Error in login check
+
+DONT COMMIT
 '''
 
 
 PROGRAM_DESCRIP = '''This script deletes containers whose names
  start with specific prefixes and whose users have not
  logged in for a while.'''
-VERSION = '20201007'
+VERSION = '20201008'
+EXIT_FAIL = 1
 
 def find_all_existing_containers_plainpython():
     '''
@@ -136,8 +186,8 @@ def delete_them_plainpython(which_to_delete):
     n = len(which_to_delete)
 
     if n == 0:
-        LOGGER.info('No containers to be stopped. Bye!')
-        sys.exit()
+        LOGGER.info('No containers to be stopped.')
+        return True
 
     LOGGER.info('Stopping and removing %s containers. This will take some seconds...' % n)
 
@@ -147,7 +197,8 @@ def delete_them_plainpython(which_to_delete):
         p1 = subprocess.call(['docker', 'stop', name])
         p2 = subprocess.call(['docker', 'rm', name])
 
-    LOGGER.debug('Finished deleting!')
+    LOGGER.info('Finished deleting!')
+    return True
 
 def delete_them(which_to_delete, docker_client):
     '''
@@ -161,8 +212,8 @@ def delete_them(which_to_delete, docker_client):
     n = len(which_to_delete)
 
     if n == 0:
-        LOGGER.info('No containers to be stopped. Bye!')
-        sys.exit()
+        LOGGER.info('No containers to be stopped.')
+        return True
 
     LOGGER.info('Stopping and removing %s containers. This will take some seconds...' % n)
 
@@ -173,6 +224,7 @@ def delete_them(which_to_delete, docker_client):
         docker_client.remove_container(name)
 
     LOGGER.debug('Finished deleting!')
+    return True
 
 def get_username_for_container(containername, docker_client):
     insp = docker_client.inspect_container(containername)
@@ -207,39 +259,52 @@ def check_when_last_logged_in(username, user_login_info):
         return None
 
 def request_login_times(api_url, secret):
+    '''
+    Request the login times for all users from the dashboard API
+    and returns them as JSON.
+
+    May raise ValueError.
+    '''
     try:
         resp = requests.post(api_url, data=dict(secret=secret))
 
     except RequestException as e:
-        LOGGER.error('Error while querying login times: %s' % e)
-        LOGGEr.info('Bye!')
-        sys.exit(1)
+        err = 'Error while querying login times: %s' % e
+        LOGGER.error(err)
+        raise ValueError(err)
 
     if resp.status_code == 404:
-        LOGGER.error('Error while querying login times: Received 404. Wrong URL?')
-        LOGGEr.info('Bye!')
-        sys.exit(1)
+        err = 'Error while querying login times: Received 404. Wrong URL?'
+        LOGGER.error(err)
+        raise ValueError(err)
+
     elif 'Login with Marine ID' in resp.content:
-        LOGGER.error('Error while querying login times: Not logged in. Wrong password?')
+        err = 'Error while querying login times: Not logged in. Wrong password?'
+        LOGGER.error(err)
+        raise ValueError(err)        
 
     # Convert to JSON
     try:
         user_login_info = resp.json()
     except json.decoder.JSONDecodeError as e:
-        LOGGER.error('Error while querying login times: Could not read JSON response (%s)' % e)
-        LOGGEr.info('Bye!')
-        sys.exit(1)
+        err = 'Error while querying login times: Could not read JSON response (%s)' % e
+        LOGGER.error(err)
+        raise ValueError(err)        
 
     return user_login_info
 
 def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, days):
+    '''
+    May raise ValueError.
+    '''
+
     if days is None or days == 0:
         LOGGER.debug('Not checking for last login.')
         return candidates_to_delete
 
     which_to_delete = []
 
-    # Request user login times from API (this may exit)
+    # Request user login times from API (this may raise ValueError)
     user_login_info = request_login_times(api_url, secret)
 
     # Get username and matching login time:
@@ -274,6 +339,10 @@ def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, da
     return which_to_delete
 
 def are_days_given(myargs):
+    '''
+    Return int number of days, or None if no check is desired.
+    Exits if the value typed by the user could not be understood. WIP.
+    '''
 
     # Via command line:
     if 'days' in myargs:
@@ -307,7 +376,7 @@ def are_days_given(myargs):
             except ValueError as e:
                 LOGGER.error('Could not understand the value you typed: %s (%s)' % (reply, e))
                 LOGGER.info('Bye!')
-                sys.exit(1)
+                sys.exit(EXIT_FAIL)
             return days
 
 def exit_if_cannot_login(myargs, doclient):
@@ -315,16 +384,78 @@ def exit_if_cannot_login(myargs, doclient):
     # No URL and password for login check:
     if myargs.url is None:
         LOGGER.warn('Cannot check for last login without a URL! Bye!')
-        sys.exit(1)
+        sys.exit(EXIT_FAIL)
+
     if myargs.password is None:
         LOGGER.warn('Cannot check for last login without a password! Bye!')
-        sys.exit(1)
+        sys.exit(EXIT_FAIL)
 
     # No Docker client
     if doclient is None:
         LOGGER.warn('Cannot check for last login, as we have '+
                 'no docker API library. Bye!')
-        sys.exit(1)
+        sys.exit(EXIT_FAIL)
+
+
+def one_deletion_run(doclient, myargs):
+
+    # Find all container names
+    all_container_names = find_all_existing_containers(doclient)
+    if len(all_container_names) == 0:
+        LOGGER.info('No containers found at all.')
+        LOGGER.info('No containers to be deleted.')
+        return True
+
+    # Find container names starting with <prefix>
+    which_to_delete = filter_container_names(all_container_names, myargs.prefix)
+    if len(which_to_delete) == 0:
+        LOGGER.info('No containers found starting with %s.' % myargs.prefix)
+        LOGGER.info('No containers to be deleted.')
+        return True
+
+    # Does user want us to check login times?
+    # This may exit if the user types an not-understood one # WIP
+    days = are_days_given(myargs)
+
+    # Exit if we lack info for checking login times:
+    if days is not None:
+        exit_if_cannot_login(myargs, doclient)
+
+    # Check for each container whether they are old enough
+    if days is not None:
+
+        try:
+            which_to_delete = check_if_old_enough(which_to_delete,
+                myargs.url, myargs.password, doclient, days)
+            if len(which_to_delete) == 0:
+                LOGGER.info('No containers found that are older than %s days.' % days)
+                LOGGER.info('No containers to be deleted.')
+                return True
+
+        except ValueError as e:
+            LOGGER.warning('Could not check for login times. Stopping. This may be temporary, so try again.')
+            return False
+
+    # Ask user to reconfirm (unless --yes passed)
+    which_to_delete = confirm_container_names(which_to_delete, myargs.yes)
+    if len(which_to_delete) == 0:
+        LOGGER.info('No containers left to delete %s.')
+        return True
+
+    # Print all that will be deleted:
+    LOGGER.debug('We will stop and delete all these:')
+    for name in which_to_delete:
+        LOGGER.debug(' * %s' % name)
+
+    # Re-asking for permission to stop and delete them all
+    if not myargs.yes:
+        var = raw_input("Proceed with deletion? Type 'y'")
+        if not var == 'y':
+            LOGGER.info('Not stopping or deleting anything.')
+            return True
+
+    success = delete_them(which_to_delete, doclient)
+    return success
 
 if __name__ == '__main__':
 
@@ -341,6 +472,8 @@ if __name__ == '__main__':
         help="Delete after how many days since user's last login? ")
     parser.add_argument("-y", "--yes", action="store_true",
         help="Do not ask for reconfirm (useful for scripting).")
+    parser.add_argument("-e", "--every", type=int, action="store",
+        help="Run continuously, until stopped, every x hours. Implies --yes.")
     parser.add_argument('prefix', help='Container name should start with this.')
     myargs = parser.parse_args()
 
@@ -353,6 +486,18 @@ if __name__ == '__main__':
     root.setLevel(logging.INFO)
     if myargs.verbose:
         root.setLevel(logging.DEBUG)
+
+    # Check some args:
+    if 'every' in myargs and myargs.every is not None:
+        if myargs.every <= 0:
+            LOGGER.error('This value is not allowed for --every: %s. Bye!' % myargs.every)
+            sys.exit(EXIT_FAIL)
+
+    if 'every' in myargs and myargs.every is not None:
+        if not myargs.yes:
+            LOGGER.warning('You specified --every, so we will also set --yes.')
+            myargs.yes = True
+
     
     # Docker client
     try:
@@ -363,57 +508,46 @@ if __name__ == '__main__':
             LOGGER.warning('Cannot check for last login, as we have '+
                 'no docker API library! (You can run this without '+
                 'specifying --days"!). Bye.')
-            sys.exit()
+            sys.exit(EXIT_FAIL)
         else:
             LOGGER.warning('No docker library found. Will use plain python.')
             doclient = None # works with plain python then
 
-    # Find all container names
-    all_container_names = find_all_existing_containers(doclient)
-    if len(all_container_names) == 0:
-        LOGGER.info('No containers found. Exiting.')
-        sys.exit()
+    # Run once:
+    if not 'every' in myargs or myargs.every is None:
+        success = one_deletion_run(doclient, myargs)
 
-    # Find container names starting with <prefix>
-    which_to_delete = filter_container_names(all_container_names, myargs.prefix)
-    if len(which_to_delete) == 0:
-        LOGGER.info('No containers found starting with %s. Exiting.' % myargs.prefix)
-        sys.exit()
+        if not success:
+            LOGGER.warning('Stopping. Bye!')
+            sys.exit(EXIT_FAIL)
 
-    # Does user want us to check login times?
-    days = are_days_given(myargs)
+    # Run many times:
+    else:
+        sleep_hours = myargs.every
+        sleep_seconds = 60*60*sleep_hours
+        while True:
+            success = one_deletion_run(doclient, myargs)
 
-    # Exit if we lack info for checking login times:
-    if days is not None:
-        exit_if_cannot_login(myargs, doclient)
+            if not success:
+                LOGGER.warning('Failed. Trying again (second time) in a minute...')
+                time.sleep(60)
+                LOGGER.warning('Trying again (second time)...')
+                success = one_deletion_run(doclient, myargs)
 
-    # Check for each container whether they are old enough
-    if days is not None:
-        which_to_delete = check_if_old_enough(which_to_delete,
-            myargs.url, myargs.password, doclient, days)
-        if len(which_to_delete) == 0:
-            LOGGER.info('No containers found that are older than %s days. Exiting.' % days)
-            sys.exit()
+            if not success:
+                LOGGER.warning('Failed. Trying again (third time) in five minutes...')
+                time.sleep(5*60)
+                LOGGER.warning('Trying again (third time)...')
+                success = one_deletion_run(doclient, myargs)
 
-    # Ask user to reconfirm (unless --yes passed)
-    which_to_delete = confirm_container_names(which_to_delete, myargs.yes)
-    if len(which_to_delete) == 0:
-        LOGGER.info('No containers left to delete %s. Exiting.')
-        sys.exit()
+            if not success:
+                LOGGER.warning('Stopping. Bye!')
+                sys.exit(EXIT_FAIL)
 
-    # Print all that will be deleted:
-    LOGGER.debug('We will stop and delete all these:')
-    for name in which_to_delete:
-        LOGGER.debug(' * %s' % name)
 
-    # Re-asking for permission to stop and delete them all
-    if not myargs.yes:
-        var = raw_input("Proceed with deletion? Type 'y'")
-        if not var == 'y':
-            LOGGER.info('Not stopping or deleting anything. Bye!')
-            sys.exit()
-
-    delete_them(which_to_delete, doclient)
+            LOGGER.info('Sleeping for %s hours...' % sleep_hours)
+            time.sleep(sleep_seconds)
 
     LOGGER.info('Done! Bye!')
+
 
