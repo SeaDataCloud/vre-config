@@ -238,12 +238,6 @@ def one_deletion_run(doclient, prefix, api_url, api_password, days):
         LOGGER.info('No containers to be deleted.')
         return True
 
-    # Does user want us to check login times?
-    if days == 0:
-        LOGGER.debug('Not checking for last login, as you '+
-            'specified "--days 0".')
-        days = None
-
     # Exit if we lack info for checking login times:
     if days is not None:
         exit_if_cannot_login(api_url, api_password, doclient)
@@ -274,12 +268,12 @@ def one_deletion_run(doclient, prefix, api_url, api_password, days):
 if __name__ == '__main__':
 
     # Get commandline args
-    LOG_LEVEL = os.getenv('LOG_LEVEL')
-    URL = os.getenv('API_URL')     # The URL to query to get info about login times.
-    PW = os.getenv('API_PASSWORD') # The secret to query the API to get info about login times.
-    EVERY = os.getenv('EVERY')     # Run continuously, until stopped, every x hours
-    PREFIX = os.getenv('PREFIX')   # Container name should start with this.
-    NUM_DAYS = os.getenv('NUM_DAYS_SINCE_LAST_LOGIN') # Delete after how many days since user's last login?
+    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
+    API_URL = os.environ.get('API_URL', None)   # The URL to query to get info about login times.
+    API_PASSWORD = os.environ.get('API_PASSWORD', None) # The secret to query the API to get info about login times.
+    EVERY = os.environ.get('EVERY', None)       # Run continuously, until stopped, every x hours
+    PREFIX = os.environ.get('PREFIX', None)     # Container name should start with this.
+    NUM_DAYS = os.environ.get('NUM_DAYS', None) # Delete after how many days since user's last login?
 
     # Configure logging
     root = logging.getLogger()
@@ -296,25 +290,52 @@ if __name__ == '__main__':
         sys.exit(EXIT_FAIL)
 
     # Check some args:
-    if EVERY is not None:
+    # Prefix
+    if PREFIX is None:
+        LOGGER.error('PREFIX must be set! Bye!')
+        sys.exit(EXIT_FAIL)
+
+    # EVERY may be None
+    if EVERY is None:
+        LOGGER.info('Will check once, not every x hours, because EVERY is not set.')
+    else:
         try:
             EVERY = int(EVERY)
         except ValueError as e:
-            LOGGER.error('This value is not allowed for EVERY: %s. Bye!' % EVERY)
+            LOGGER.error('This value is not allowed for EVERY: %s (%s). Bye!' % (EVERY, type(EVERY)))
             sys.exit(EXIT_FAIL)
 
         if EVERY <= 0:
             LOGGER.error('This value is not allowed for EVERY: %s. Bye!' % EVERY)
             sys.exit(EXIT_FAIL)
 
-    if NUM_DAYS is not None:
+    # Num days may be None or 0
+    if NUM_DAYS is None:
+        LOGGER.info('Will not check for last login time of the user, because NUM_DAYS is not set.')
+    else:
         try:
             NUM_DAYS = int(NUM_DAYS)
         except ValueError as e:
-            LOGGER.error('This value is not allowed for NUM_DAYS: %s. Bye!' % EVERY)
+            LOGGER.error('This value is not allowed for NUM_DAYS: %s (%s). Bye!' % (NUM_DAYS, type(NUM_DAYS)))
+            sys.exit(EXIT_FAIL)
+    if NUM_DAYS == 0:
+        NUM_DAYS = None
+        LOGGER.info('Will not check for last login time of the user, because NUM_DAYS is set to 0.')
+
+
+    # If NUM_DAYS is set, we need also url and password:
+    if NUM_DAYS is not None:
+
+        if API_URL is None:
+            LOGGER.error('API_URL must be set if NUM_DAYS is set! Bye!')
+            sys.exit(EXIT_FAIL)
+
+        if API_PASSWORD is None:
+            LOGGER.error('API_PASSWORD must be set if NUM_DAYS is set! Bye!')
             sys.exit(EXIT_FAIL)
    
     # Docker client
+    # Needs mounted unix://var/run/docker.sock
     doclient = docker.APIClient()
 
     # Run once:
