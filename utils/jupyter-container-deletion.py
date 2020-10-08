@@ -183,8 +183,8 @@ def get_username_for_container(containername, docker_client):
     except KeyError as e:
         LOGGER.debug('Container env: %s' % env_dict)
         LOGGER.error('KeyError: %s' % e)
-        LOGGER.warning("Cannot verify user's last login if no username is found. Bye!")
-        sys.exit(1)
+        LOGGER.warning("Cannot verify user's last login if no username is found.")
+        return None
     
 def check_when_last_logged_in(username, user_login_info):
     try:
@@ -195,8 +195,8 @@ def check_when_last_logged_in(username, user_login_info):
     except KeyError as e:
         LOGGER.debug('User login info for "%s": %s' % (username, user_login_info))
         LOGGER.error('KeyError: %s' % e)
-        LOGGER.warning("Cannot verify user's last login if API returns no info on that. Bye!")
-        sys.exit(1)
+        LOGGER.warning("Cannot verify user's last login for '%s' if API returns no info on that." % username)
+        return None
 
 def request_login_times(api_url, secret):
     try:
@@ -239,21 +239,29 @@ def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, da
     for candidate in candidates_to_delete:
 
         username = get_username_for_container(candidate, docker_client)
+        if user is None:
+            wont_delete.append((candidate, 'username unknown'))
+            continue
+
         last_login = check_when_last_logged_in(username, user_login_info)
+        if last_login is None:
+            wont_delete.append((candidate, 'last login unknown'))
+            continue
+
         diff = datetime.datetime.now() - last_login
         if diff.days > days:
             LOGGER.debug('%s: User has not logged in for %s days - deleting!' % (username, diff.days))
             which_to_delete.append(candidate)
         else:
             LOGGER.debug('%s: User has logged in %s days ago! Not deleting!' % (username, diff.days))
-            wont_delete.append((candidate, diff.days))
+            wont_delete.append((candidate, '%s days' % diff.days))
 
     # Log:
     if len(wont_delete) > 0:
         tmp = '%s (%s days)' % wont_delete.pop()
         for item in wont_delete:
             tmp += ', (%s (%s)' % item
-        LOGGER.info('Will not delete: %s (%s days) ')
+        LOGGER.info('Will not delete: %s (%s) ')
 
     return which_to_delete
 
@@ -375,6 +383,9 @@ if __name__ == '__main__':
     if days is not None:
         which_to_delete = check_if_old_enough(which_to_delete,
             myargs.url, myargs.password, doclient, days)
+        if len(which_to_delete) == 0:
+            LOGGER.info('No containers found that are older than %s days. Exiting.' % days)
+            sys.exit()
 
     # Print all that will be deleted:
     LOGGER.debug('We will stop and delete all these:')
