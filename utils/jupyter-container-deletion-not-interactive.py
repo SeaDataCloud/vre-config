@@ -84,7 +84,7 @@ def delete_them(which_to_delete, docker_client):
 
     LOGGER.info('Stopping and removing %s containers. This will take some seconds...' % n)
 
-    for i in xrange(n):
+    for i in range(n):
         name = which_to_delete[i]
         LOGGER.info('%s/%s: Stopping and removing "%s"...' % (i+1, n, name))
         docker_client.stop(name)
@@ -145,7 +145,7 @@ def request_login_times(api_url, secret):
         LOGGER.error(err)
         raise ValueError(err)
 
-    elif 'Login with Marine ID' in resp.content:
+    elif b'Login with Marine ID' in resp.content:
         err = 'Error while querying login times: Not logged in. Wrong password?'
         LOGGER.error(err)
         raise ValueError(err)        
