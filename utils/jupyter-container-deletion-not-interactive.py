@@ -361,22 +361,55 @@ if __name__ == '__main__':
     # Run many times:
     sleep_hours = EVERY
     sleep_seconds = 60*60*sleep_hours
+    success = False
     while True:
         success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS)
 
-        if not success:
+        if success:
+            
+            with open('ishealthy.txt', 'w') as healthfile:
+                now = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
+                healthfile.write('OK: Worked at %s' % now)
+
+        else:
             LOGGER.warning('Failed. Trying again (second time) in a minute...')
-            time.sleep(60)
+           
+            with open('ishealthy.txt', 'w') as healthfile:
+                now = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
+                healthfile.write('FAILED: Failed first time at %s' % now)
+
+            try:
+                time.sleep(60)
+            except KeyboardInterrupt:
+                LOGGER.info('Stopped by user...')
+                break
+
+            # Second attempt
             LOGGER.warning('Trying again (second time)...')
             success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS)
 
         if not success:
             LOGGER.warning('Failed. Trying again (third time) in five minutes...')
-            time.sleep(5*60)
+            
+            with open('ishealthy.txt', 'w') as healthfile:
+                now = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
+                healthfile.write('FAILED: Failed second time at %s' % now)
+
+            try:
+                time.sleep(5*60)
+            except KeyboardInterrupt:
+                LOGGER.info('Stopped by user...')
+                break
+            
+            # Third attempt
             LOGGER.warning('Trying again (third time)...')
             success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS)
 
         if not success:
+            with open('ishealthy.txt', 'w') as healthfile:
+                now = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
+                healthfile.write('FAILED: Failed third time at %s' % now)
+
             LOGGER.warning('Stopping. Bye!')
             sys.exit(EXIT_FAIL)
 
@@ -385,13 +418,11 @@ if __name__ == '__main__':
             time.sleep(sleep_seconds)
         except KeyboardInterrupt:
             LOGGER.info('Stopped by user...')
+            break
 
-            if success:
-                break
-            else:
-                LOGGER.warning('Last try was not successful. Bye!')
-                sys.exit(EXIT_FAIL)
-
+    if not success:
+        LOGGER.warning('Last try was not successful. Bye!')
+        sys.exit(EXIT_FAIL)
     LOGGER.info('Done! Bye!')
 
 

@@ -6,6 +6,11 @@ RUN apt-get -y install vim wget git
 # Dependencies for script:
 RUN pip3 install requests docker
 
+# Health check:
+COPY ./healthcheck.sh ./
+RUN echo "STARTING..." > ishealthy.txt
+HEALTHCHECK --interval=10s --timeout=2s --retries=5 CMD ./healthcheck.sh
+
 COPY ./jupyter-container-deletion-not-interactive.py ./
 CMD ["python3", "jupyter-container-deletion-not-interactive.py"]
 
