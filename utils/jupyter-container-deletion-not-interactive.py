@@ -37,7 +37,7 @@ python jupyter-container-deletion-not-interactive.py
 PROGRAM_DESCRIP = '''This script deletes containers whose names
  start with specific prefixes and whose users have not
  logged in for a while.'''
-VERSION = '20201008'
+VERSION = '20201014'
 EXIT_FAIL = 1
 
 def find_all_existing_containers(docker_client):
@@ -142,7 +142,7 @@ def request_login_times(api_url, secret):
     try:
         resp = requests.post(api_url, data=dict(secret=secret))
 
-    except RequestException as e:
+    except requests.RequestException as e:
         err = 'Error while querying login times: %s' % e
         LOGGER.error(err)
         raise ValueError(err)
@@ -278,6 +278,7 @@ if __name__ == '__main__':
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
     API_URL = os.environ.get('API_URL', None)   # The URL to query to get info about login times.
     API_PASSWORD = os.environ.get('API_PASSWORD', None) # The secret to query the API to get info about login times.
+    NO_CHECK = os.environ.get('NO_CHECK', None) # Explicitly tell not to check login time!
     EVERY = os.environ.get('EVERY', None)       # Run continuously, until stopped, every x hours
     PREFIX = os.environ.get('PREFIX', None)     # Container name should start with this.
     NUM_DAYS = os.environ.get('NUM_DAYS', None) # Delete after how many days since user's last login?
@@ -303,36 +304,46 @@ if __name__ == '__main__':
         sys.exit(EXIT_FAIL)
     prefix_list = PREFIX.split(';')
 
-    # EVERY may be None
+    # EVERY
     if EVERY is None:
-        LOGGER.info('Will check once, not every x hours, because EVERY is not set.')
-    else:
-        try:
-            EVERY = int(EVERY)
-        except ValueError as e:
-            LOGGER.error('This value is not allowed for EVERY: %s (%s). Bye!' % (EVERY, type(EVERY)))
-            sys.exit(EXIT_FAIL)
+        LOGGER.error('PREFIX must be set! Bye!')
+        sys.exit(EXIT_FAIL)
 
-        if EVERY <= 0:
-            LOGGER.error('This value is not allowed for EVERY: %s. Bye!' % EVERY)
-            sys.exit(EXIT_FAIL)
+    try:
+        EVERY = int(EVERY)
+    except ValueError as e:
+        LOGGER.error('This value is not allowed for EVERY: %s (%s). Bye!' % (EVERY, type(EVERY)))
+        sys.exit(EXIT_FAIL)
 
-    # Num days may be None or 0
-    if NUM_DAYS is None:
-        LOGGER.info('Will not check for last login time of the user, because NUM_DAYS is not set.')
+    if EVERY <= 0:
+        LOGGER.error('This value is not allowed for EVERY: %s. Bye!' % EVERY)
+        sys.exit(EXIT_FAIL)
+
+    # If checking user login times is explicitly switched off:
+
+    if NO_CHECK is not None and NO_CHECK.lower() == 'true':
+        LOGGER.info('Will not check for last login time of the user, because NO_CHECK is set to: %s.' % NO_CHECK)
+        NUM_DAYS = None
+
     else:
+
+        # Num days must have a nonzero integer:
+
+        if NUM_DAYS is None:
+            LOGGER.error('NUM_DAYS must be set if NO_CHECK is not set! Bye!')
+            sys.exit(EXIT_FAIL)
+        
         try:
             NUM_DAYS = int(NUM_DAYS)
         except ValueError as e:
             LOGGER.error('This value is not allowed for NUM_DAYS: %s (%s). Bye!' % (NUM_DAYS, type(NUM_DAYS)))
             sys.exit(EXIT_FAIL)
-    if NUM_DAYS == 0:
-        NUM_DAYS = None
-        LOGGER.info('Will not check for last login time of the user, because NUM_DAYS is set to 0.')
+    
+        if NUM_DAYS <= 0:
+            LOGGER.error('This value is not allowed for NUM_DAYS: %s. Bye!' % NUM_DAYS)
+            sys.exit(EXIT_FAIL)
 
-
-    # If NUM_DAYS is set, we need also url and password:
-    if NUM_DAYS is not None:
+        # We need also url and password:
 
         if API_URL is None:
             LOGGER.error('API_URL must be set if NUM_DAYS is set! Bye!')
@@ -341,61 +352,44 @@ if __name__ == '__main__':
         if API_PASSWORD is None:
             LOGGER.error('API_PASSWORD must be set if NUM_DAYS is set! Bye!')
             sys.exit(EXIT_FAIL)
-   
-    # EVERY may be None
-    if EVERY is None:
-        LOGGER.info('Will check once, not every x hours, because EVERY is not set.')
-    else:
-        try:
-            EVERY = int(EVERY)
-        except ValueError as e:
-            LOGGER.error('This value is not allowed for EVERY: %s (%s). Bye!' % (EVERY, type(EVERY)))
-            sys.exit(EXIT_FAIL)
-
-        if EVERY <= 0:
-            LOGGER.error('This value is not allowed for EVERY: %s. Bye!' % EVERY)
-            sys.exit(EXIT_FAIL)
 
     # Docker client
     # Needs mounted unix://var/run/docker.sock
     doclient = docker.APIClient()
 
-    # Run once:
-    if EVERY is None:
+    # Run many times:
+    sleep_hours = EVERY
+    sleep_seconds = 60*60*sleep_hours
+    while True:
         success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS)
+
+        if not success:
+            LOGGER.warning('Failed. Trying again (second time) in a minute...')
+            time.sleep(60)
+            LOGGER.warning('Trying again (second time)...')
+            success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS)
+
+        if not success:
+            LOGGER.warning('Failed. Trying again (third time) in five minutes...')
+            time.sleep(5*60)
+            LOGGER.warning('Trying again (third time)...')
+            success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS)
 
         if not success:
             LOGGER.warning('Stopping. Bye!')
             sys.exit(EXIT_FAIL)
 
-    # Run many times:
-    else:
-        sleep_hours = EVERY
-        sleep_seconds = 60*60*sleep_hours
-        while True:
-            success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS)
+        LOGGER.info('Sleeping for %s hours...' % sleep_hours)
+        try:
+            time.sleep(sleep_seconds)
+        except KeyboardInterrupt:
+            LOGGER.info('Stopped by user...')
 
-            if not success:
-                LOGGER.warning('Failed. Trying again (second time) in a minute...')
-                time.sleep(60)
-                LOGGER.warning('Trying again (second time)...')
-                success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS)
-
-            if not success:
-                LOGGER.warning('Failed. Trying again (third time) in five minutes...')
-                time.sleep(5*60)
-                LOGGER.warning('Trying again (third time)...')
-                success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS)
-
-            if not success:
-                LOGGER.warning('Stopping. Bye!')
+            if success:
+                break
+            else:
+                LOGGER.warning('Last try was not successful. Bye!')
                 sys.exit(EXIT_FAIL)
-
-            LOGGER.info('Sleeping for %s hours...' % sleep_hours)
-            try:
-                time.sleep(sleep_seconds)
-            except KeyboardInterrupt:
-                LOGGER.info('Stopped by user...')
 
     LOGGER.info('Done! Bye!')
 
