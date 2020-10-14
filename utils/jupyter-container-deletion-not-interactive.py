@@ -127,9 +127,8 @@ def check_when_last_logged_in(username, user_login_info):
         last_login = datetime.datetime.strptime(last_login, '%Y-%m-%dT%M:%S')
         return last_login
     except KeyError as e:
-        LOGGER.debug('User login info for all users: %s' % (user_login_info))
         LOGGER.error('KeyError: %s (not contained in user login info).' % e)
-        LOGGER.warning("Cannot verify user's last login for '%s' if API returns no info on that." % username)
+        LOGGER.warning("Cannot verify user's last login for '%s' if API returns no info for that user." % username)
         return None
 
 def request_login_times(api_url, secret):
@@ -160,6 +159,8 @@ def request_login_times(api_url, secret):
     # Convert to JSON
     try:
         user_login_info = resp.json()
+        LOGGER.debug('User login info for all users: %s' % (user_login_info))
+
     except json.decoder.JSONDecodeError as e:
         err = 'Error while querying login times: Could not read JSON response (%s)' % e
         LOGGER.error(err)
@@ -197,17 +198,17 @@ def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, da
 
         diff = datetime.datetime.now() - last_login
         if diff.days > days:
-            LOGGER.debug('%s: User has not logged in for %s days - deleting!' % (username, diff.days))
+            LOGGER.info('%s: User has not logged in for %s days - will delete: %s!' % (username, diff.days, candidate))
             which_to_delete.append(candidate)
         else:
-            LOGGER.debug('%s: User has logged in %s days ago! Not deleting!' % (username, diff.days))
+            LOGGER.debug('%s: User has logged in %s days ago! Will not delete: %s!' % (username, diff.days, candidate))
             wont_delete.append((candidate, '%s days' % diff.days))
 
     # Log:
     if len(wont_delete) > 0:
         tmp = '%s (%s)' % wont_delete.pop()
         for item in wont_delete:
-            tmp += ', (%s (%s)' % item
+            tmp += ', %s (%s)' % item
         LOGGER.info('Will not delete: %s' % tmp)
 
     return which_to_delete
@@ -261,11 +262,11 @@ def one_deletion_run(doclient, prefix_list, api_url, api_password, days):
                 return True
 
         except ValueError as e:
-            LOGGER.warning('Could not check for login times. Stopping. This may be temporary, so try again.')
+            LOGGER.warning('Could not check for login times (this may be temporary), so could not delete anything.')
             return False
 
     # Print all that will be deleted:
-    LOGGER.debug('We will stop and delete all these:')
+    LOGGER.debug('Will stop and delete all these:')
     for name in which_to_delete:
         LOGGER.debug(' * %s' % name)
 
