@@ -21,12 +21,14 @@ CREATE TEST CONTAINERS:
 docker run --name bla-haha1 -e VRE_USERNAME=franz -d alpine tail -f /dev/null
 docker run --name bla-haha2 -e VRE_USERNAME=vre_xxx -d alpine tail -f /dev/null
 docker run --name bla-haha3 -d alpine tail -f /dev/null
+docker run --name bli-haha3 -d alpine tail -f /dev/null
+
 
 USAGE:
 API_PASSWORD='xxx'
 API_URL='https://sdc-test.xxx.gr/getuserauthinfo'
 NUM_DAYS_SINCE_LAST_LOGIN=7
-PREFIX='bla'
+PREFIX='bla;bli'
 python jupyter-container-deletion-not-interactive.py
 
 '''
@@ -54,7 +56,7 @@ def find_all_existing_containers(docker_client):
 
     return all_container_names
 
-def filter_container_names(all_container_names, startswith):
+def filter_container_names(all_container_names, startswith_list):
     '''
     Collecting all names of containers to stop
     and delete:
@@ -62,11 +64,16 @@ def filter_container_names(all_container_names, startswith):
     which_to_delete = []
 
     for name in all_container_names:
+        was_matched = False
+        for startswith in startswith_list:
+            if name.startswith(startswith):
+                was_matched = True
+                continue
 
-        if not name.startswith(startswith):
-            LOGGER.debug('Ignoring "%s"...' % name)
-        else:
+        if was_matched:
             which_to_delete.append(name)
+        else:
+            LOGGER.debug('Ignoring "%s"...' % name)
 
     return which_to_delete
 
@@ -222,7 +229,7 @@ def exit_if_cannot_login(url, password, doclient):
                 'no docker API library. Bye!')
         sys.exit(EXIT_FAIL)
 
-def one_deletion_run(doclient, prefix, api_url, api_password, days):
+def one_deletion_run(doclient, prefix_list, api_url, api_password, days):
 
     # Find all container names
     all_container_names = find_all_existing_containers(doclient)
@@ -232,9 +239,9 @@ def one_deletion_run(doclient, prefix, api_url, api_password, days):
         return True
 
     # Find container names starting with <prefix>
-    which_to_delete = filter_container_names(all_container_names, prefix)
+    which_to_delete = filter_container_names(all_container_names, prefix_list)
     if len(which_to_delete) == 0:
-        LOGGER.info('No containers found starting with %s.' % prefix)
+        LOGGER.info('No containers found starting with %s.' % prefix_list)
         LOGGER.info('No containers to be deleted.')
         return True
 
@@ -294,6 +301,7 @@ if __name__ == '__main__':
     if PREFIX is None:
         LOGGER.error('PREFIX must be set! Bye!')
         sys.exit(EXIT_FAIL)
+    prefix_list = PREFIX.split(';')
 
     # EVERY may be None
     if EVERY is None:
@@ -334,13 +342,27 @@ if __name__ == '__main__':
             LOGGER.error('API_PASSWORD must be set if NUM_DAYS is set! Bye!')
             sys.exit(EXIT_FAIL)
    
+    # EVERY may be None
+    if EVERY is None:
+        LOGGER.info('Will check once, not every x hours, because EVERY is not set.')
+    else:
+        try:
+            EVERY = int(EVERY)
+        except ValueError as e:
+            LOGGER.error('This value is not allowed for EVERY: %s (%s). Bye!' % (EVERY, type(EVERY)))
+            sys.exit(EXIT_FAIL)
+
+        if EVERY <= 0:
+            LOGGER.error('This value is not allowed for EVERY: %s. Bye!' % EVERY)
+            sys.exit(EXIT_FAIL)
+
     # Docker client
     # Needs mounted unix://var/run/docker.sock
     doclient = docker.APIClient()
 
     # Run once:
     if EVERY is None:
-        success = one_deletion_run(doclient, PREFIX, API_URL, API_PASSWORD, NUM_DAYS)
+        success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS)
 
         if not success:
             LOGGER.warning('Stopping. Bye!')
@@ -351,19 +373,19 @@ if __name__ == '__main__':
         sleep_hours = EVERY
         sleep_seconds = 60*60*sleep_hours
         while True:
-            success = one_deletion_run(doclient, PREFIX, API_URL, API_PASSWORD, NUM_DAYS)
+            success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS)
 
             if not success:
                 LOGGER.warning('Failed. Trying again (second time) in a minute...')
                 time.sleep(60)
                 LOGGER.warning('Trying again (second time)...')
-                success = one_deletion_run(doclient, PREFIX, API_URL, API_PASSWORD, NUM_DAYS)
+                success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS)
 
             if not success:
                 LOGGER.warning('Failed. Trying again (third time) in five minutes...')
                 time.sleep(5*60)
                 LOGGER.warning('Trying again (third time)...')
-                success = one_deletion_run(doclient, PREFIX, API_URL, API_PASSWORD, NUM_DAYS)
+                success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS)
 
             if not success:
                 LOGGER.warning('Stopping. Bye!')
