@@ -11,8 +11,9 @@ import os
 
 LOGGER = logging.getLogger(__name__)
 
-# TODO: Dockerize
 # TODO: Write pytests
+# TODO: Add notification
+# TODO: Add VIP list for users/containers
 
 
 '''
@@ -304,6 +305,8 @@ if __name__ == '__main__':
         LOGGER.error('PREFIX must be set! Bye!')
         sys.exit(EXIT_FAIL)
     prefix_list = PREFIX.split(';')
+    tmp = '", "'.join(prefix_list)
+    LOGGER.info('Deletion of containers starting with "%s"' % tmp)
 
     # EVERY
     if EVERY is None:
@@ -320,6 +323,9 @@ if __name__ == '__main__':
         LOGGER.error('This value is not allowed for EVERY: %s. Bye!' % EVERY)
         sys.exit(EXIT_FAIL)
 
+    now = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
+    LOGGER.info('This script will run every %s hours (starting at %s).' % (EVERY, now))
+    
     # If checking user login times is explicitly switched off:
 
     if NO_CHECK is not None and NO_CHECK.lower() == 'true':
@@ -343,6 +349,8 @@ if __name__ == '__main__':
         if NUM_DAYS <= 0:
             LOGGER.error('This value is not allowed for NUM_DAYS: %s. Bye!' % NUM_DAYS)
             sys.exit(EXIT_FAIL)
+
+        LOGGER.info('Only container of users who logged in more than %s days ago will be deleted.' % NUM_DAYS)
 
         # We need also url and password:
 
