@@ -1,0 +1,17 @@
+version: '3.3'
+# VERSION 20201015
+
+services:
+  deleter:
+    image: registry-sdc.argo.grnet.gr/container_deletion:20201014
+    restart: always
+    volumes:
+      # Docker Socket (needed to spawn containers)
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      #LOG_LEVEL: 'DEBUG'
+      EVERY: 12
+      PREFIX: bla;bli
+      NUM_DAYS: 14
+      API_URL: https://vre.seadatanet.org/getuserauthinfo
+      API_PASSWORD: xxx
