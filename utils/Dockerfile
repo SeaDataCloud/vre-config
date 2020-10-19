@@ -11,8 +11,8 @@ COPY ./healthcheck.sh ./
 RUN echo "STARTING..." > ishealthy.txt
 HEALTHCHECK --interval=10s --timeout=2s --retries=5 CMD ./healthcheck.sh
 
-COPY ./jupyter-container-deletion-not-interactive.py ./
-CMD ["python3", "jupyter-container-deletion-not-interactive.py"]
+COPY ./container-deletion-not-interactive.py ./
+CMD ["python3", "container-deletion-not-interactive.py"]
 
 # docker build -t container_deletion:20201019 .
 # docker tag container_deletion:20201019 registry-sdc.argo.grnet.gr/container_deletion:20201019
