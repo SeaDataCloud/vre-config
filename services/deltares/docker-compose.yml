@@ -3,7 +3,7 @@ version: '3.3'
 services:
 
   nginx:
-    image: nginx
+    image: nginx:1.19.3 # newest on 20201019
     networks:
       - deltares
     restart: always

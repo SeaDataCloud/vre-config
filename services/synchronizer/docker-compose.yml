@@ -1,6 +1,7 @@
 version: '3.3'
 
 services:
+
   syncer:
    image: registry-sdc.argo.grnet.gr/syncer_wsgi:20200428-3-as33  
    restart: always
@@ -45,7 +46,7 @@ services:
       - vre_dash
 
   syncer_proxy:
-    image: nginx
+    image: nginx:1.19.3 # newest on 20201019
     restart: always
     volumes:
       # Two sets of nginx config need to be passed:
