@@ -13,7 +13,7 @@ services:
       EVERY: 12
       PREFIX: bla;bli
       NUM_DAYS: 14
-      API_URL: https://vre.seadatanet.org/getuserauthinfo
-      API_PASSWORD: xxx
+      API_URL: ${API_URL}
+      API_PASSWORD: ${API_PASSWORD}
       PROTECTED_CONTAINERS: vre_ofthequeen;jupyter-queenie
       PROTECTED_USERNAMES: kingkong;mowgli
