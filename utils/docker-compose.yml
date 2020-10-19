@@ -3,7 +3,7 @@ version: '3.3'
 
 services:
   deleter:
-    image: registry-sdc.argo.grnet.gr/container_deletion:20201014
+    image: registry-sdc.argo.grnet.gr/container_deletion:20201019
     restart: always
     volumes:
       # Docker Socket (needed to spawn containers)
@@ -15,3 +15,5 @@ services:
       NUM_DAYS: 14
       API_URL: https://vre.seadatanet.org/getuserauthinfo
       API_PASSWORD: xxx
+      PROTECTED_CONTAINERS: vre_ofthequeen;jupyter-queenie
+      PROTECTED_USERNAMES: kingkong;mowgli

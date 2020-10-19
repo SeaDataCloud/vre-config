@@ -13,24 +13,47 @@ LOGGER = logging.getLogger(__name__)
 
 # TODO: Write pytests
 # TODO: Add notification
-# TODO: Add VIP list for users/containers
 
 
 '''
 
-CREATE TEST CONTAINERS:
-docker run --name bla-haha1 -e VRE_USERNAME=franz -d alpine tail -f /dev/null
-docker run --name bla-haha2 -e VRE_USERNAME=vre_xxx -d alpine tail -f /dev/null
-docker run --name bla-haha3 -d alpine tail -f /dev/null
-docker run --name bli-haha3 -d alpine tail -f /dev/null
-
-
-USAGE:
+Usage from command line:
+```
 API_PASSWORD='xxx'
 API_URL='https://sdc-test.xxx.gr/getuserauthinfo'
 NUM_DAYS_SINCE_LAST_LOGIN=7
 PREFIX='bla;bli'
-python jupyter-container-deletion-not-interactive.py
+PROTECTED_USERNAMES='kingkong;tarzan'
+PROTECTED_CONTAINERS='bla-protected'
+# Run:
+python3 jupyter-container-deletion-not-interactive.py
+```
+
+Testing (using containerized version):
+
+First, create test containers:
+
+```
+# These will not be deleted:
+docker run --name bla-noinfo -e VRE_USERNAME=franz -d alpine tail -f /dev/null
+docker run --name bla-nousername -d alpine tail -f /dev/null
+docker run --name bla-protected -e VRE_USERNAME=fake-username-250days -d alpine tail -f /dev/null
+docker run --name bla-protecteduser -e VRE_USERNAME=kingkong -d alpine tail -f /dev/null
+docker run --name bla-loggedin-recently -e VRE_USERNAME=fake-username-10mins -d alpine tail -f /dev/null
+
+# These will be deleted:
+docker run --name bla-loggedin-longago -e VRE_USERNAME=fake-username-250days -d alpine tail -f /dev/null
+docker run --name bli-other-prefix -e VRE_USERNAME=fake-username-250days -d alpine tail -f /dev/null
+
+# Use a real name to test API:
+docker run --name bla-loggedin-real -e VRE_USERNAME=vre_realusername -d alpine tail -f /dev/null
+```
+
+Then run it:
+
+```
+docker run --name dele --mount type=bind,source="/var/run/docker.sock",target="/var/run/docker.sock" --env EVERY=2 --env PROTECTED_USERNAMES="kingkong" --env PROTECTED_CONTAINERS="bla-protected" --env PREFIX="bla;bli" --env NUM_DAYS=200 --env API_URL=https://vre.seadatanet.org/getuserauthinfo --env API_PASSWORD=xxx container_deletion:20201019
+```
 
 '''
 
@@ -38,7 +61,7 @@ python jupyter-container-deletion-not-interactive.py
 PROGRAM_DESCRIP = '''This script deletes containers whose names
  start with specific prefixes and whose users have not
  logged in for a while.'''
-VERSION = '20201014'
+VERSION = '20201019'
 EXIT_FAIL = 1
 
 def find_all_existing_containers(docker_client):
@@ -77,6 +100,15 @@ def filter_container_names(all_container_names, startswith_list):
             LOGGER.debug('Ignoring "%s"...' % name)
 
     return which_to_delete
+
+def filter_protected(which_to_delete, protected_containers):
+    new_which_to_delete = []
+    for item in which_to_delete:
+        if item in protected_containers:
+            LOGGER.info('Will not delete "%s" (protected).' % item)
+        else:
+            new_which_to_delete.append(item)
+    return new_which_to_delete
 
 def delete_them(which_to_delete, docker_client):
     '''
@@ -117,8 +149,8 @@ def get_username_for_container(containername, docker_client):
         return username
     except KeyError as e:
         LOGGER.debug('Container env: %s' % env_dict)
-        LOGGER.error('KeyError: %s in env of "%s"' % (e, containername))
-        LOGGER.warning("Cannot verify user's last login if no username is found.")
+        err = 'Missing username: (variable %s) in env of container "%s".' % (e, containername)
+        LOGGER.warning(err + " Cannot verify user's last login if no username is found.")
         return None
     
 def check_when_last_logged_in(username, user_login_info):
@@ -128,8 +160,17 @@ def check_when_last_logged_in(username, user_login_info):
         last_login = datetime.datetime.strptime(last_login, '%Y-%m-%dT%M:%S')
         return last_login
     except KeyError as e:
-        LOGGER.error('KeyError: %s (not contained in user login info).' % e)
-        LOGGER.warning("Cannot verify user's last login for '%s' if API returns no info for that user." % username)
+
+        # For testing:
+        if username == 'fake-username-10mins':
+            now = datetime.datetime.now()
+            return now - datetime.timedelta(minutes=10)
+        elif username == 'fake-username-250days':
+            now = datetime.datetime.now()
+            return now - datetime.timedelta(days=250)
+
+        err = 'Missing user: "%s" (not contained in user login info).' % username
+        LOGGER.warning(err + " Cannot verify user's last login if API returns no info for that user.")
         return None
 
 def request_login_times(api_url, secret):
@@ -168,6 +209,32 @@ def request_login_times(api_url, secret):
         raise ValueError(err)        
 
     return user_login_info
+
+def check_if_name_protected(candidates_to_delete, docker_client, protected_usernames):
+    wont_delete = []
+    which_to_delete = []
+
+    for candidate in candidates_to_delete:
+
+        username = get_username_for_container(candidate, docker_client)
+        
+        if username is None:
+            wont_delete.append((candidate, 'username unknown'))
+
+        elif username in protected_usernames:
+            wont_delete.append((candidate, 'username is protected'))
+
+        else:
+            which_to_delete.append(candidate)
+
+    # Log:
+    if len(wont_delete) > 0:
+        tmp = '%s (%s)' % wont_delete.pop()
+        for item in wont_delete:
+            tmp += ', %s (%s)' % item
+        LOGGER.info('Will not delete: %s' % tmp)
+
+    return which_to_delete
 
 def check_if_old_enough(candidates_to_delete, api_url, secret, docker_client, days):
     '''
@@ -231,7 +298,8 @@ def exit_if_cannot_login(url, password, doclient):
                 'no docker API library. Bye!')
         sys.exit(EXIT_FAIL)
 
-def one_deletion_run(doclient, prefix_list, api_url, api_password, days):
+def one_deletion_run(doclient, prefix_list, api_url, api_password, days,
+                     protected_containers, protected_usernames):
 
     # Find all container names
     all_container_names = find_all_existing_containers(doclient)
@@ -247,9 +315,20 @@ def one_deletion_run(doclient, prefix_list, api_url, api_password, days):
         LOGGER.info('No containers to be deleted.')
         return True
 
+    # Exclude the "protected" ones:
+    which_to_delete = filter_protected(which_to_delete, protected_containers)
+
     # Exit if we lack info for checking login times:
     if days is not None:
         exit_if_cannot_login(api_url, api_password, doclient)
+
+    # Check for each container whether the username is protected
+    which_to_delete = check_if_name_protected(which_to_delete,
+        doclient, protected_usernames)
+    if len(which_to_delete) == 0:
+        LOGGER.info('No containers found that not protected.')
+        LOGGER.info('No containers to be deleted.')
+        return True
 
     # Check for each container whether they are old enough
     if days is not None:
@@ -283,6 +362,8 @@ if __name__ == '__main__':
     NO_CHECK = os.environ.get('NO_CHECK', None) # Explicitly tell not to check login time!
     EVERY = os.environ.get('EVERY', None)       # Run continuously, until stopped, every x hours
     PREFIX = os.environ.get('PREFIX', None)     # Container name should start with this.
+    PROTECTED_CONTAINERS = os.environ.get('PROTECTED_CONTAINERS', None)
+    PROTECTED_USERNAMES  = os.environ.get('PROTECTED_USERNAMES', None)
     NUM_DAYS = os.environ.get('NUM_DAYS', None) # Delete after how many days since user's last login?
 
     # Configure logging
@@ -299,6 +380,8 @@ if __name__ == '__main__':
         LOGGER.warn(err)
         sys.exit(EXIT_FAIL)
 
+    LOGGER.info('Running deletion tool, version %s' % VERSION)
+
     # Check some args:
     # Prefix
     if PREFIX is None:
@@ -308,7 +391,21 @@ if __name__ == '__main__':
     tmp = '", "'.join(prefix_list)
     LOGGER.info('Deletion of containers starting with "%s"' % tmp)
 
-    # EVERY
+    # Protected continer names
+    if PROTECTED_CONTAINERS is None:
+        LOGGER.info('No protected containers.')
+        PROTECTED_CONTAINERS = []
+    else:
+        PROTECTED_CONTAINERS = PROTECTED_CONTAINERS.split(';')
+
+    # Protected usernames
+    if PROTECTED_USERNAMES is None:
+        LOGGER.info('No protected usernames.')
+        PROTECTED_USERNAMES = []
+    else:
+        PROTECTED_USERNAMES = PROTECTED_USERNAMES.split(';')
+
+    # Every how many hours
     if EVERY is None:
         LOGGER.error('PREFIX must be set! Bye!')
         sys.exit(EXIT_FAIL)
@@ -371,7 +468,8 @@ if __name__ == '__main__':
     sleep_seconds = 60*60*sleep_hours
     success = False
     while True:
-        success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS)
+        success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD,
+                                   NUM_DAYS, PROTECTED_CONTAINERS, PROTECTED_USERNAMES)
 
         if success:
             
@@ -394,7 +492,7 @@ if __name__ == '__main__':
 
             # Second attempt
             LOGGER.warning('Trying again (second time)...')
-            success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS)
+            success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS, PROTECTED_CONTAINERS, PROTECTED_USERNAMES)
 
         if not success:
             LOGGER.warning('Failed. Trying again (third time) in five minutes...')
@@ -411,7 +509,7 @@ if __name__ == '__main__':
             
             # Third attempt
             LOGGER.warning('Trying again (third time)...')
-            success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS)
+            success = one_deletion_run(doclient, prefix_list, API_URL, API_PASSWORD, NUM_DAYS, PROTECTED_CONTAINERS, PROTECTED_USERNAMES)
 
         if not success:
             with open('ishealthy.txt', 'w') as healthfile:
