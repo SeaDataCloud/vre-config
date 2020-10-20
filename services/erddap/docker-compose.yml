@@ -24,12 +24,12 @@ services:
       #LOG_LEVEL: 'DEBUG'
       # User directories will be chowned to these uid:gid, unless they exist.
       # Jupyter Notebooks will run as these uid:gid.
-      RUN_AS_USER: ${RUN_AS_USER}     # usually 1000
-      RUN_AS_GROUP: ${RUN_AS_GROUP}   # usually 1000
+      RUN_AS_USER: ${RUN_AS_USER}
+      RUN_AS_GROUP: ${RUN_AS_GROUP}
       # Where are the user directories on the host file system:
       HOST_WHERE_ARE_USERDIRS: ${HOST_WHERE_ARE_USERDIRS}
       USERDIR_IN_CONTAINER: ${USERDIR_IN_CONTAINER}
-      USERDIR_TEMPLATE_HOST: '/{raw_username}/files' # On original NextCloud
+      USERDIR_TEMPLATE_HOST: ${USERDIR_TEMPLATE_HOST}
       MOUNT_USER_DIRS: 'true'
       # Where to authenticate users:
       AUTH_URL: ${AUTH_URL}
