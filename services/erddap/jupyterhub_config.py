@@ -5,7 +5,7 @@ c = get_config()
 import logging
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
-VERSION = '20200428'
+VERSION = '20201020'
 LOGGER.info('Jupyter Config version %s' % VERSION)
 
 
@@ -156,8 +156,8 @@ if RUN_AS_USER == 33:
 ### Misc settings ###
 #####################
 
-# WHere does the service run inside the container?
-# JupyterHub by default # expects services to run at 8888,'so we must tell JHub where
+# Where does the service run inside the container?
+# JupyterHub by default expects services to run at 8888, so we must tell JHub where
 # to access it instead. E.g. ERDDAP always runs on port 8091 inside the container.
 c.Spawner.port = SERVICE_PORT_IN_CONTAINER
 #c.DockerSpawner.port=SERVICE_PORT_IN_CONTAINER
@@ -239,10 +239,16 @@ if len(BASE_URL) > 0:
 
 whitelist = []
 
-if WHITELIST_AUTH is None:
+if WHITELIST_AUTH is None or len(WHITELIST_AUTH)==0:
     urls = []
 else:
-    urls = WHITELIST_AUTH.split(',')
+    if ',' in WHITELIST_AUTH:
+        urls = WHITELIST_AUTH.split(',')
+    elif ';' in WHITELIST_AUTH:
+        urls = WHITELIST_AUTH.split(';')
+    else:
+        urls = [WHITELIST_AUTH]
+
 
 for url in urls:
     url = url.strip()
