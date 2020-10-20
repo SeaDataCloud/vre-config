@@ -1,4 +1,5 @@
 #!/usr/bin/env -u python
+# python2
 
 import subprocess
 import sys
@@ -29,7 +30,7 @@ docker run --name bla-haha3 -d alpine tail -f /dev/null
 USAGE:
 python jupyter-container-deletion-interactive.py -p xxxx --url https://sdc-test.xxx.gr/getuserauthinfo -d 7 bla
 
-Note: This uses python2 (raw_input, ...)
+Note: This uses python2 (raw_input, xrange, ...)
 
 '''
 
