@@ -7,7 +7,8 @@ LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
 VERSION = '20201020'
 LOGGER.info('Jupyter Config version %s' % VERSION)
-
+# This is a slightly modified copy of:
+#https://github.com/merretbuurman/jupyterhub-webdavauthenticator/blob/master/jupyterhub_config.py
 
 #######################################
 ### Environment variables           ###
@@ -57,8 +58,8 @@ HTTP_TIMEOUT = int(HTTP_TIMEOUT)
 RUN_AS_USER = int(RUN_AS_USER)
 RUN_AS_GROUP = int(RUN_AS_GROUP)
 
-# Some need rsplit
-HOST_WHERE_ARE_USERDIRS = HOST_WHERE_ARE_USERDIRS.rstrip()
+# Some need strip or rstrip:
+HOST_WHERE_ARE_USERDIRS = HOST_WHERE_ARE_USERDIRS.rstrip('/')
 USERDIR_TEMPLATE_HOST = USERDIR_TEMPLATE_HOST.strip('/')
 USERDIR_IN_CONTAINER = USERDIR_IN_CONTAINER.rstrip('/')
 
@@ -354,5 +355,4 @@ if len(volume_mounts) > 0:
     c.DockerSpawner.volumes = volume_mounts
 else:
     LOGGER.warn('No volume mounts into the spawned containers were requested.')
-
 
