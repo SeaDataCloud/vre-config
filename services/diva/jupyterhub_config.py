@@ -5,8 +5,10 @@ c = get_config()
 import logging
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
-VERSION = '20200428'
+VERSION = '20201020'
 LOGGER.info('Jupyter Config version %s' % VERSION)
+# This is a slightly modified copy of:
+#https://github.com/merretbuurman/jupyterhub-webdavauthenticator/blob/master/jupyterhub_config.py
 
 
 #######################################
@@ -57,8 +59,8 @@ HTTP_TIMEOUT = int(HTTP_TIMEOUT)
 RUN_AS_USER = int(RUN_AS_USER)
 RUN_AS_GROUP = int(RUN_AS_GROUP)
 
-# Some need rsplit
-HOST_WHERE_ARE_USERDIRS = HOST_WHERE_ARE_USERDIRS.rstrip()
+# Some need strip or rstrip:
+HOST_WHERE_ARE_USERDIRS = HOST_WHERE_ARE_USERDIRS.rstrip('/')
 USERDIR_TEMPLATE_HOST = USERDIR_TEMPLATE_HOST.strip('/')
 USERDIR_IN_CONTAINER = USERDIR_IN_CONTAINER.rstrip('/')
 
@@ -156,8 +158,8 @@ if RUN_AS_USER == 33:
 ### Misc settings ###
 #####################
 
-# WHere does the service run inside the container?
-# JupyterHub by default # expects services to run at 8888,'so we must tell JHub where
+# Where does the service run inside the container?
+# JupyterHub by default expects services to run at 8888, so we must tell JHub where
 # to access it instead. E.g. ERDDAP always runs on port 8091 inside the container.
 c.Spawner.port = SERVICE_PORT_IN_CONTAINER
 #c.DockerSpawner.port=SERVICE_PORT_IN_CONTAINER
@@ -239,10 +241,16 @@ if len(BASE_URL) > 0:
 
 whitelist = []
 
-if WHITELIST_AUTH is None:
+if WHITELIST_AUTH is None or len(WHITELIST_AUTH)==0:
     urls = []
 else:
-    urls = WHITELIST_AUTH.split(',')
+    if ',' in WHITELIST_AUTH:
+        urls = WHITELIST_AUTH.split(',')
+    elif ';' in WHITELIST_AUTH:
+        urls = WHITELIST_AUTH.split(';')
+    else:
+        urls = [WHITELIST_AUTH]
+
 
 for url in urls:
     url = url.strip()
@@ -348,5 +356,4 @@ if len(volume_mounts) > 0:
     c.DockerSpawner.volumes = volume_mounts
 else:
     LOGGER.warn('No volume mounts into the spawned containers were requested.')
-
 
