@@ -46,7 +46,7 @@ docker run --name bla-loggedin-longago -e VRE_USERNAME=fake-username-250days -d 
 docker run --name bli-other-prefix -e VRE_USERNAME=fake-username-250days -d alpine tail -f /dev/null
 
 # Use a real name to test API:
-docker run --name bla-loggedin-real -e VRE_USERNAME=vre_realusername -d alpine tail -f /dev/null
+docker run --name bla-loggedin-real -e VRE_USERNAME=vre_jcardosomarineidorgxyh81zia -d alpine tail -f /dev/null
 ```
 
 Then run it:

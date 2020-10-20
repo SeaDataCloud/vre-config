@@ -22,6 +22,5 @@ CMD ["python3", "container-deletion-not-interactive.py"]
 # docker run --name dele --mount type=bind,source="/var/run/docker.sock",target="/var/run/docker.sock" --env EVERY=2 --env PROTECTED_USERNAMES="kingkong" --env PROTECTED_CONTAINERS="bla-protected;bli-protected" --env PREFIX="bla;bli" --env NO_CHECK=true container_deletion:20201019
 
 # Run with user login check (RECOMMENDED):
-# docker run --name dele --mount type=bind,source="/var/run/docker.sock",target="/var/run/docker.sock" --env EVERY=2 --env PROTECTED_USERNAMES="kingkong" --env PROTECTED_CONTAINERS="bla-protected;bli-protected" --env PREFIX="bla;bli" --env NUM_DAYS=200 --env API_URL=https://vre.seadatanet.org/getuserauthinfo --env API_PASSWORD=xxx container_deletion:20201019
-
+# docker run --name dele --mount type=bind,source="/var/run/docker.sock",target="/var/run/docker.sock" --env EVERY=2 --env PROTECTED_USERNAMES="kingkong" --env PROTECTED_CONTAINERS="bla-protected;bli-protected" --env PREFIX="bla;bli" --env NUM_DAYS=200 --env API_URL=https://vre.seadatanet.org/getuserauthinfo --env API_PASSWORD=k8T5gh5D container_deletion:20201019
 
