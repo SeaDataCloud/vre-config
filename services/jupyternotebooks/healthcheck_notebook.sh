@@ -1,3 +1,22 @@
+#!/bin/bash
+
+# Help:
+#jupyter --help
+#jupyter notebook --help
+#jupyter notebook list
+
+# This will be checked:
+OUTPUT=`jupyter notebook list`
+# Example output:
+#Currently running servers:
+#http://0.0.0.0:8888/rrr/user/vre_exampleusername/ :: /home/jovyan/work
+
+#echo "OUTPUT: $OUTPUT"
+#echo "JUPYTERHUB_USER: $JUPYTERHUB_USER"
+#echo "BASE_URL: $BASE_URL"
+#echo "Checking..."
+
+### Check for username:
 RESULT_USERNAME="false"
 if [[ $OUTPUT == *"$JUPYTERHUB_USER"* ]]; then
   echo "JUPYTERHUB_USER there: $JUPYTERHUB_USER"
@@ -22,13 +41,10 @@ else
 fi
 echo $RESULT_BASE_URL
 
-### Check the exit code
+### Check the exit code:
 RESULT_EXITCODE=-99
 jupyter notebook list
 RESULT_EXITCODE=$?
 echo "Exit code: $RESULT_EXITCODE"
 
 exit $RESULT_EXITCODE
-
-
-
