@@ -19,7 +19,7 @@ services:
     cap_add:
       - SYS_ADMIN
     networks:
-      - vre-hubs
+      - vre
     environment:
       #LOG_LEVEL: 'DEBUG'
       # User directories will be chowned to these uid:gid, unless they exist.
@@ -42,7 +42,7 @@ services:
       # Under which URL is this reachable? host:port/BASE_URL/
       BASE_URL: ${BASE_URL}   # this must be in the dashboard, and in nginx config!
       # Network config:
-      DOCKER_NETWORK_NAME: vre-hubs
+      DOCKER_NETWORK_NAME: vre
       HUB_IP: ${HUB_IP}   # this is this service's name!
       JUPYTERHUB_CRYPT_KEY: ${JUPYTERHUB_CRYPT_KEY} # create by: "openssl rand -hex 32"
       SSL_OFF: 'true'
@@ -64,6 +64,6 @@ services:
 # docker spawner, and if we use an internal one, its name will be prefixed by the
 # compose stack's name.
 networks:
-  vre-hubs:
+  vre:
     external: true
 
