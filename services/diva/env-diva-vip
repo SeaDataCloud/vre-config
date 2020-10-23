@@ -1,7 +1,7 @@
 ### Service DIVA (VIP edition)
 ### Running on bluewhale
 ### Using synchronized Nextcloud
-### 20201020
+### 20201023
 
 HOST_WHERE_ARE_USERDIRS=/scratch/vre/sync_from_athens/nextcloud_data
 RUN_AS_USER=501
@@ -21,7 +21,6 @@ MEMORY_LIMIT=20G
 # Not needed for DIVA:
 JAVA_OPTS=foo
 HOST_NAME=foo
-HOST_WHERE_IS_ERDDAP_DATA=/foo
 SERVICE_PORT_IN_CONTAINER=foo
 FILESELECTOR_URL=https://foo.bar
 

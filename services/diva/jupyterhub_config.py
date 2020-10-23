@@ -5,11 +5,10 @@ c = get_config()
 import logging
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
-VERSION = '20201020'
+VERSION = '20201023'
 LOGGER.info('Jupyter Config version %s' % VERSION)
 # This is a slightly modified copy of:
 #https://github.com/merretbuurman/jupyterhub-webdavauthenticator/blob/master/jupyterhub_config.py
-
 
 #######################################
 ### Environment variables           ###
@@ -29,7 +28,6 @@ AUTH_URL = os.environ['AUTH_URL']
 HOST_NAME = os.environ.get('HOST_NAME', None)
 PORT_NAME = os.environ.get('PORT_NAME', None)
 JAVA_OPTS = os.environ.get('JAVA_OPTS', None) # '-Xms800M -Xmx800M'
-HOST_WHERE_IS_ERDDAP_DATA = os.environ.get('HOST_WHERE_IS_ERDDAP_DATA', None)
 
 
 ## Optional (have defaults)
@@ -97,7 +95,7 @@ if False:
     LOGGER.info('Config for ERDDAP...')
 
     if (HOST_NAME is None or PORT_NAME is None or JAVA_OPTS is None or
-        HOST_WHERE_IS_ERDDAP_DATA is None or SERVICE_PORT_IN_CONTAINER is None):
+        SERVICE_PORT_IN_CONTAINER is None):
         raise ValueError("One or more of the ERDDAP-specific env vars is missing.")
 
     # Tell ERDDAP itself its own URL (on the outside)
@@ -108,11 +106,6 @@ if False:
     # Pass Java Opts to ERDDAP/tomcat:
     container_env['JAVA_OPTS'] = JAVA_OPTS
 
-    # Service data and Webapps for ERDDAP:
-    HOST_WHERE_IS_ERDDAP_DATA = HOST_WHERE_IS_ERDDAP_DATA.rstrip()
-    volume_mounts[HOST_WHERE_IS_ERDDAP_DATA] = '/service_data'
-    volume_mounts[HOST_WHERE_IS_ERDDAP_DATA+'/erddap-webapps'] = '/opt/tomcat8/webapps'
-    # TODO: Eventually ask Leo to put WebApps into the image!
 
 ##############################
 ### File system and mounts ###
