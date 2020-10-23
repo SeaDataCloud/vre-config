@@ -1,7 +1,10 @@
 ### Service Python
 ### Running on bluewhale
 ### Using synchronized Nextcloud
-### 20201020
+### 20201023
+
+# Not currently used in the VRE
+# as we use the image where R and Python are both installed.
 
 HOST_WHERE_ARE_USERDIRS=/scratch/vre/sync_from_athens/nextcloud_data
 RUN_AS_USER=501
@@ -15,9 +18,9 @@ DOCKER_JUPYTER_IMAGE=registry-sdc.argo.grnet.gr/jupyterhub/singleuser-healthchec
 # That contains Python only. We only added a healthcheck to the image.
 #Off the shelf (Python only): DOCKER_JUPYTER_IMAGE=jupyterhub/singleuser:1.2
 #For R and Python: DOCKER_JUPYTER_IMAGE=jupyter/r-notebook:15a66513da30
-CONTAINER_PREFIX=python
-BASE_URL=python
-HUB_IP=hub_python
+CONTAINER_PREFIX=pythononly
+BASE_URL=pythononly
+HUB_IP=hub_pythononly
 JUPYTERHUB_CRYPT_KEY=foo
 MEMORY_LIMIT=5G
 

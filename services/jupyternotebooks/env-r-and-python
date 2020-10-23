@@ -1,7 +1,7 @@
-### Service R
+### Service Python and R Notebook
 ### Running on bluewhale
 ### Using synchronized Nextcloud
-### 20201020
+### 20201023
 
 HOST_WHERE_ARE_USERDIRS=/scratch/vre/sync_from_athens/nextcloud_data
 RUN_AS_USER=501
@@ -12,11 +12,11 @@ AUTH_URL=https://vre.seadatanet.org
 ADMIN_PW=foo
 DOCKER_JUPYTER_IMAGE=jupyter/r-notebook:15a66513da301
 # Contains python and R
-CONTAINER_PREFIX=rrr
-BASE_URL=rrr
-HUB_IP=hub_rrr
+CONTAINER_PREFIX=python
+BASE_URL=python
+HUB_IP=hub_python
 JUPYTERHUB_CRYPT_KEY=foo
-MEMORY_LIMIT=2G
+MEMORY_LIMIT=5G
 
 # Not needed for R:
 JAVA_OPTS=foo
