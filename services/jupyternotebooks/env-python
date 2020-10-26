@@ -1,7 +1,7 @@
 ### Service Python
 ### Running on bluewhale
 ### Using synchronized Nextcloud
-### 20201023
+### 20201026
 
 # Not currently used in the VRE
 # as we use the image where R and Python are both installed.
@@ -14,8 +14,8 @@ USERDIR_TEMPLATE_HOST=/{raw_username}
 USERDIR_IN_CONTAINER=/home/jovyan/work/nextcloud_sync
 AUTH_URL=https://vre.seadatanet.org
 ADMIN_PW=foo
-DOCKER_JUPYTER_IMAGE=registry-sdc.argo.grnet.gr/jupyterhub/singleuser-healthchecked:1.2-20201022
-# That contains Python only. We only added a healthcheck to the image.
+DOCKER_JUPYTER_IMAGE=registry-sdc.argo.grnet.gr/jupyterhub/singleuser-healthchecked:1.2-20201026
+# That contains Python only. We only added a healthcheck+favicon to the image.
 #Off the shelf (Python only): DOCKER_JUPYTER_IMAGE=jupyterhub/singleuser:1.2
 #For R and Python: DOCKER_JUPYTER_IMAGE=jupyter/r-notebook:15a66513da30
 CONTAINER_PREFIX=pythononly
