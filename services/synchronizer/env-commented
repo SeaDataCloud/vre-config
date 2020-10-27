@@ -1,0 +1,9 @@
+# .env for the synchronizer
+DATA_PATH=/data/to/be/synced
+LOCAL_SYNC_TARGET=foobar/notused
+PUBLIC_KEY_SSH_RSYNC=/ssh/public/key
+SSL_PRIVATE_KEY=/SSL/private/key
+SSL_CERT_CHAIN=/SSL/certificate
+THIS_SITE=anystring
+THIS_HOST=anystring
+PATH_TO_HEALTCHECKS=/path/to/nginx/healthcheck

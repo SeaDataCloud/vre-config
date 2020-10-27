@@ -1,0 +1,13 @@
+# .env for the synchronizer
+# running on VM sdc-test at GRNET, Athens
+# version 20201026
+DATA_PATH=/mnt/sdc-nfs-data
+LOCAL_SYNC_TARGET=foobar
+PUBLIC_KEY_SSH_RSYNC=./vre-sync-key-bluewhale
+#PUBLIC_KEY_SSH_RSYNC=./vre-sync-key # for sync with jellyfish?
+SSL_PRIVATE_KEY=/root/cert/cert.key
+SSL_CERT_CHAIN=/root/cert/cert.pem
+THIS_SITE=athina
+THIS_HOST=sdc-test
+PATH_TO_HEALTCHECKS=/root/HEALTH
+

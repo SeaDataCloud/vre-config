@@ -1,0 +1,11 @@
+# .env for the synchronizer
+# running on vm XYZ at STFC
+# version 20201026, WIP
+DATA_PATH=/mnt/notsure
+LOCAL_SYNC_TARGET=foobar
+PUBLIC_KEY_SSH_RSYNC=/opt/vre/syncer/vre-rsync-key
+SSL_PRIVATE_KEY=/notsure/cert/cert.key
+SSL_CERT_CHAIN=/notsure/cert/cert.pem
+THIS_SITE=stfc
+THIS_HOST=TODO
+PATH_TO_HEALTCHECKS=/opt/vre/HEALTH
