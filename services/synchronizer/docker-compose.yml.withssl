@@ -1,6 +1,6 @@
 version: '3.3'
 
-# 20201026
+# 20201026, with SSL
 
 services:
 
@@ -20,6 +20,9 @@ services:
      - ${PUBLIC_KEY_SSH_RSYNC}:/srv/syncer/KEYS/privkey:ro
      # File containing the info about the remote hosts
      - ./remotehosts.json:/srv/syncer/remotehosts.json:ro
+     # SSL certs:
+     - ${SSL_PRIVATE_KEY}:/srv/jupyterhub/ssl/certs/myhost_cert_and_chain.crt:rw
+     - ${SSL_CERT_CHAIN}:/srv/jupyterhub/ssl/private/myhost.key:rw
      # Config for uwsgi:
      # Volume to contain the socket to communicate with nginx:
      - wsgi_volume:/srv/syncer/wsgi_socket/
@@ -55,8 +58,10 @@ services:
       - wsgi_volume/:/srv/syncer/wsgi_socket/
       # Healthcheck and SSL certs:
       - ${PATH_TO_HEALTHCHECKS}/healthcheck_nginx.sh:/bin/healthcheck.sh
-    expose:
-      - 80
+      - ${SSL_CERT_CHAIN}:/etc/ssl/certs/myhost.crt:rw
+      - ${SSL_PRIVATE_KEY}:/etc/ssl/private/myhost.key:rw
+    ports:
+      - 5000:443
     depends_on:
       - syncer
     networks:

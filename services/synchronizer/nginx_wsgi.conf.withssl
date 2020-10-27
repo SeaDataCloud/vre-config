@@ -1,12 +1,11 @@
 server {
     listen      80;
 
-    # 20201026
+    # 20201026, with SSL
     # Listening on 443 is only needed when SSL termination is done here!
-    # In VRE, there's the VRE reverse proxy in front, so we don't need this!
-    #listen       443 ssl;
-    #ssl_certificate     /etc/ssl/certs/myhost.crt;
-    #ssl_certificate_key /etc/ssl/private/myhost.key;
+    listen       443 ssl;
+    ssl_certificate     /etc/ssl/certs/myhost.crt;
+    ssl_certificate_key /etc/ssl/private/myhost.key;
 
 
     server_name localhost;
