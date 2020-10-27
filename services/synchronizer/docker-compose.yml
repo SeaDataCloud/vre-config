@@ -1,5 +1,7 @@
 version: '3.3'
 
+# 20201026
+
 services:
 
   syncer:
@@ -55,7 +57,7 @@ services:
       # Volume to contain the socket to communicate with Flask via uwsgi:
       - wsgi_volume/:/srv/syncer/wsgi_socket/
       # Healthcheck and SSL certs:
-      - ${PATH_TO_HEALTCHECKS}/healthcheck_nginx.sh:/bin/healthcheck.sh
+      - ${PATH_TO_HEALTHCHECKS}/healthcheck_nginx.sh:/bin/healthcheck.sh
       - ${SSL_CERT_CHAIN}:/etc/ssl/certs/myhost.crt:rw
       - ${SSL_PRIVATE_KEY}:/etc/ssl/private/myhost.key:rw
     ports:

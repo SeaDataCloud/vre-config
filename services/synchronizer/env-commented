@@ -1,4 +1,6 @@
 # .env for the synchronizer
+# running on vm XYZ at XYZ
+# version 20201026
 DATA_PATH=/data/to/be/synced
 LOCAL_SYNC_TARGET=foobar/notused
 PUBLIC_KEY_SSH_RSYNC=/ssh/public/key
@@ -6,4 +8,4 @@ SSL_PRIVATE_KEY=/SSL/private/key
 SSL_CERT_CHAIN=/SSL/certificate
 THIS_SITE=anystring
 THIS_HOST=anystring
-PATH_TO_HEALTCHECKS=/path/to/nginx/healthcheck
+PATH_TO_HEALTHCHECKS=/path/to/nginx/healthcheck

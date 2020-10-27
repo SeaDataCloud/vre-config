@@ -9,5 +9,5 @@ SSL_PRIVATE_KEY=/root/cert/cert.key
 SSL_CERT_CHAIN=/root/cert/cert.pem
 THIS_SITE=athina
 THIS_HOST=sdc-test
-PATH_TO_HEALTCHECKS=/root/HEALTH
+PATH_TO_HEALTHCHECKS=/root/HEALTH
 
